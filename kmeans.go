@@ -11,26 +11,6 @@ type Point []float64
 // Cluster is a set of points.
 type Cluster []Point
 
-// validate panics if there are no points or if any points are
-// of unequal or zero dimension.
-func validate(pnts []Point) {
-	numPnts := len(pnts)
-	if numPnts == 0 {
-		panic("validate: no points")
-	}
-
-	dims := len(pnts[0])
-	if dims == 0 {
-		panic("validate: dimensionless point")
-	}
-
-	for i := 1; i < numPnts; i++ {
-		if dims != len(pnts[i]) {
-			panic("validate: dimension mismatch")
-		}
-	}
-}
-
 // KMeans clusters a set of points into k groups.
 func KMeans(k int, pnts []Point) []Cluster {
 	// Move points to their nearest cluster until they no longer
@@ -43,12 +23,14 @@ func KMeans(k int, pnts []Point) []Cluster {
 		minIndex  int                     // Index of cluster having smallest squared distance to a point
 		sd, minSD float64                 // Squared distance; minimum squared distance
 	)
+
+	for h := range sizes {
+		sizes[h] = len(clstrs[h])
+	}
+
 	for changed {
 		changed = false
-		mns = means(clstrs)
-		for i := range sizes {
-			sizes[i] = len(clstrs[i])
-		}
+		mns = Means(clstrs)
 
 		for h := range clstrs {
 			// Each cluster is sorted, so the most variant point
@@ -94,12 +76,14 @@ func KMeans(k int, pnts []Point) []Cluster {
 					clstrs[h] = clstrs[h][:i]
 				}
 
+				sizes[minIndex]++
+				sizes[h]--
 				changed = true
 			}
 		}
 
 		if changed {
-			sortClusters(clstrs)
+			SortAllClusters(clstrs)
 		}
 	}
 
@@ -120,7 +104,7 @@ func OptimalKMeans(pnts []Point) (int, []Cluster) {
 		vars = make([]float64, 0, n)
 		varsPnts = make([]Point, 0, n)
 		for numClstrs := 1; numClstrs < n; numClstrs++ {
-			vars = append(vars, meanVariances(KMeans(numClstrs, pnts)))
+			vars = append(vars, MeanVariances(KMeans(numClstrs, pnts)))
 			varsPnts = append(varsPnts, Point{vars[numClstrs-1]})
 		}
 
@@ -154,17 +138,6 @@ func OptimalKMeans(pnts []Point) (int, []Cluster) {
 	}
 
 	return 0, nil
-}
-
-// maxPow returns the largest power p such that b^p <= n for a
-// given base b > 0. Assumes b,n > 0.
-func maxPow(b, n int) int {
-	var p int // Power to return
-	for bp := b; bp <= n; bp *= b {
-		p++
-	}
-
-	return p
 }
 
 // initClusters returns a set of k sorted clusters.
@@ -202,8 +175,39 @@ func initClusters(k int, pnts []Point) []Cluster {
 	return clstrs
 }
 
-// means returns a set of each mean of each cluster.
-func means(clstrs []Cluster) []Point {
+// validate panics if there are no points or if any points are
+// of unequal or zero dimension.
+func validate(pnts []Point) {
+	numPnts := len(pnts)
+	if numPnts == 0 {
+		panic("validate: no points")
+	}
+
+	dims := len(pnts[0])
+	if dims == 0 {
+		panic("validate: dimensionless point")
+	}
+
+	for i := 1; i < numPnts; i++ {
+		if dims != len(pnts[i]) {
+			panic("validate: dimension mismatch")
+		}
+	}
+}
+
+// maxPow returns the largest power p such that b^p <= n for a
+// given base b > 0. Assumes b,n > 0.
+func maxPow(b, n int) int {
+	var p int // Power to return
+	for bp := b; bp <= n; bp *= b {
+		p++
+	}
+
+	return p
+}
+
+// Means returns the set of points each representing the mean (center) of each cluster.
+func Means(clstrs []Cluster) []Point {
 	mns := make([]Point, 0, len(clstrs))
 	for i := range clstrs {
 		mns = append(mns, Mean(clstrs[i]))
@@ -212,7 +216,7 @@ func means(clstrs []Cluster) []Point {
 	return mns
 }
 
-// Mean returns a point representing the Mean of the cluster.
+// Mean returns a point representing the mean (center) of the cluster.
 func Mean(clstr Cluster) Point {
 	n := float64(len(clstr))
 	if n == 0 {
@@ -259,8 +263,18 @@ func Variance(clstr Cluster) float64 {
 	return v / float64(n-1)
 }
 
-// meanVariances returns the mean variance of a set of clusters.
-func meanVariances(clstrs []Cluster) float64 {
+// Variances returns the set of variances for each cluster.
+func Variances(clstrs []Cluster) []float64 {
+	vars := make([]float64, 0, len(clstrs))
+	for i := range clstrs {
+		vars = append(vars, Variance(clstrs[i]))
+	}
+
+	return vars
+}
+
+// MeanVariances returns the mean variance of a set of clusters.
+func MeanVariances(clstrs []Cluster) float64 {
 	var v float64 // Sum of variances
 	for i := range clstrs {
 		v += Variance(clstrs[i])
@@ -296,14 +310,15 @@ func sortCluster(clstr Cluster) {
 	}
 }
 
-// sortClusters sorts each cluster.
-func sortClusters(clstrs []Cluster) {
+// SortAllClusters sorts each cluster.
+func SortAllClusters(clstrs []Cluster) {
 	for i := range clstrs {
 		sortCluster(clstrs[i])
 	}
 }
 
-func comparePoints(pnt0, pnt1 Point) int {
+// ComparePoints returns -1, 0, or 1 indicating point 0 precedes, is equal to, or follows point 1.
+func ComparePoints(pnt0, pnt1 Point) int {
 	for i := range pnt0 {
 		if pnt0[i] < pnt1[i] {
 			return -1
@@ -317,7 +332,9 @@ func comparePoints(pnt0, pnt1 Point) int {
 	return 0
 }
 
-func compareClusters(clstr0, clstr1 Cluster) int {
+// CompareClusters returns -1, 0, or 1 indicating cluster 0
+// precedes, is equal to, or follows cluster 1.
+func CompareClusters(clstr0, clstr1 Cluster) int {
 	m, n := len(clstr0), len(clstr1)
 	if m == 0 {
 		if n == 0 {
@@ -339,7 +356,7 @@ func compareClusters(clstr0, clstr1 Cluster) int {
 	}
 
 	for i := 0; i < maxIndex; i++ {
-		comparison = comparePoints(clstr0[i], clstr1[i])
+		comparison = ComparePoints(clstr0[i], clstr1[i])
 		if comparison != 0 {
 			return comparison
 		}
@@ -354,4 +371,38 @@ func compareClusters(clstr0, clstr1 Cluster) int {
 	}
 
 	return 0
+}
+
+// Normalize each dimension in each point to the range [-1,1]
+// assuming the largest value for each dimension is within the
+// scope of the points provided.
+func Normalize(pnts []Point) {
+	maxPnt := MaxPoint(pnts)
+	for i := range pnts {
+		for j, v := range maxPnt {
+			if v != 0 {
+				pnts[i][j] /= v
+			}
+		}
+	}
+}
+
+// MaxPoint returns a point in which each dimension is the
+// largest non-negative value observed in the set of points.
+func MaxPoint(pnts []Point) Point {
+	if len(pnts) == 0 {
+		return nil
+	}
+
+	maxPnt := make(Point, len(pnts[0]))
+	for i := range pnts {
+		for j, v := range pnts[i] {
+			v = math.Abs(v)
+			if maxPnt[j] < v {
+				maxPnt[j] = v
+			}
+		}
+	}
+
+	return maxPnt
 }
