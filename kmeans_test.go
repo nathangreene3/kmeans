@@ -23,7 +23,7 @@ func TestKMeans(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test.actClstrs = KMeans(test.k, test.pnts)
+		test.actClstrs = KMeans(test.k, test.pnts, false)
 		for h := range test.expClstrs {
 			sort.SliceStable(test.expClstrs[h], func(i, j int) bool { return ComparePoints(test.expClstrs[h][i], test.expClstrs[h][j]) < 0 })
 		}
@@ -40,20 +40,69 @@ func TestKMeans(t *testing.T) {
 	}
 }
 
-// func TestNormalizeKMeans(t *testing.T){
-// 	tests := []struct {
-// 		k         int
-// 		pnts      []Point
-// 		expClstrs []Cluster
-// 		actClstrs []Cluster
-// 	}{
-// 		{
-// 			k:    2,
-// 			pnts: []Point{Point{1, 1}, Point{2, 1}, Point{3, 3}, Point{4, 2}, Point{4, 3}},
-// 			expClstrs: []Cluster{
-// 				Cluster{Point{1, 1}, Point{2, 1}},
-// 				Cluster{Point{3, 3}, Point{4, 2}, Point{4, 3}},
-// 			},
-// 		},
-// 	}
-// }
+/*
+func TestNormalizeKMeans(t *testing.T){
+	tests := []struct {
+		k         int
+		pnts      []Point
+		expClstrs []Cluster
+		actClstrs []Cluster
+	}{
+		{
+			k:    2,
+			pnts: []Point{Point{1, 1}, Point{2, 1}, Point{3, 3}, Point{4, 2}, Point{4, 3}},
+			expClstrs: []Cluster{
+				Cluster{Point{1, 1}, Point{2, 1}},
+				Cluster{Point{3, 3}, Point{4, 2}, Point{4, 3}},
+			},
+		},
+	}
+}
+*/
+
+func TestMaxPow(t *testing.T) {
+	tests := []struct {
+		b        int
+		x        int
+		expected int
+		actual   int
+	}{
+		{
+			b:        10,
+			x:        0,
+			expected: 0,
+			actual:   0,
+		},
+		{
+			b:        10,
+			x:        1,
+			expected: 0,
+			actual:   0,
+		},
+		{
+			b:        10,
+			x:        9,
+			expected: 0,
+			actual:   0,
+		},
+		{
+			b:        10,
+			x:        10,
+			expected: 1,
+			actual:   0,
+		},
+		{
+			b:        10,
+			x:        11,
+			expected: 1,
+			actual:   0,
+		},
+	}
+
+	for _, test := range tests {
+		test.actual = maxPow(test.b, test.x)
+		if test.expected != test.actual {
+			t.Fatalf("expected: %d\nactual: %d\n", test.expected, test.actual)
+		}
+	}
+}
