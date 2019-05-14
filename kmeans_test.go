@@ -34,7 +34,7 @@ func TestKMeans(t *testing.T) {
 
 		for i := range test.actClstrs {
 			if CompareClusters(test.expClstrs[i], test.actClstrs[i]) != 0 {
-				t.Fatalf("KMeans failed.\nExpected: %0.2f\nReceived: %0.2f\n", test.expClstrs, test.actClstrs)
+				t.Fatalf("KMeans failed.\nExpected: %0.2f\nReceived: %0.2f\nMeans: %0.2f\n", test.expClstrs, test.actClstrs, Means(test.actClstrs))
 			}
 		}
 	}
@@ -95,6 +95,12 @@ func TestMaxPow(t *testing.T) {
 			b:        10,
 			x:        11,
 			expected: 1,
+			actual:   0,
+		},
+		{
+			b:        2,
+			x:        7,
+			expected: 2,
 			actual:   0,
 		},
 	}

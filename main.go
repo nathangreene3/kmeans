@@ -75,11 +75,11 @@ func test2() {
 
 func test3() {
 	pnts := []Point{
-		Point{4, 3},
-		Point{1, 1},
-		Point{3, 3},
-		Point{2, 1},
-		Point{4, 2},
+		Point{2, 1}, // (0.50, 0.33)
+		Point{4, 3}, // (1.00, 1.00)
+		Point{4, 2}, // (1.00, 0.67)
+		Point{3, 3}, // (0.75, 1.00)
+		Point{1, 1}, // (0.25, 0.33)
 	}
 
 	n := len(pnts)

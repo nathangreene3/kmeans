@@ -21,6 +21,7 @@ func KMeans(k int, pnts []Point, normalize bool) []Cluster {
 		changed   = true                             // Indicates if a cluster was altered
 		mns       []Point                            // Means of clusters
 		minIndex  int                                // Index of cluster having smallest squared distance to a point
+		n         int                                // Number of points
 		sd, minSD float64                            // Squared distance; minimum squared distance
 	)
 
@@ -34,12 +35,12 @@ func KMeans(k int, pnts []Point, normalize bool) []Cluster {
 
 		for h := range clstrs {
 			// Each cluster is sorted, so the most variant point is at index clstrs[h][sizes[h]-1]. When the point clstrs[h][i] variance is small enough to not move to another cluster, then we can move on to the next cluster and ignore the other points on the range [0,i). So, h counts down and halts early.
-			for i := sizes[h] - 1; 0 <= i; i-- {
+			for i := sizes[h] - 1; 0 <= i && 0 < sizes[h]; i-- {
 				// Find the index of the cluster closest to point i in cluster h.
 				minIndex = h
 				minSD = SquaredDistance(mns[h], clstrs[h][i])
 				for j := range clstrs {
-					if h == j || sizes[j] == 0 {
+					if h == j { // if h == j || sizes[j] == 0 { // Experimental. See below comment.
 						// If h = j, then we are comparing the same cluster. If the size of cluster j is zero, then, obviously, there's no points to compare.
 						continue
 					}
@@ -52,8 +53,8 @@ func KMeans(k int, pnts []Point, normalize bool) []Cluster {
 				}
 
 				if h == minIndex {
-					// Point i in cluster h is the farthest point still in cluster h, so all smaller indexed points are closer and don't need to be checked.
-					break
+					// Point i in cluster h is closest to cluster h, so we don't need to move it.
+					continue
 				}
 
 				// Move point i in cluster h to the nearest cluster and update sizes and changed.
@@ -68,6 +69,12 @@ func KMeans(k int, pnts []Point, normalize bool) []Cluster {
 				sizes[h]--
 				changed = true
 			}
+
+			// Experimental: Choose a random point as a new mean. This point won't be in the jth cluster, but its value will hopefully reset the empty cluster.
+			if sizes[h] == 0 {
+				seed()
+				copy(mns[h], pnts[int(rand.Intn(n))])
+			}
 		}
 
 		if changed {
@@ -75,6 +82,7 @@ func KMeans(k int, pnts []Point, normalize bool) []Cluster {
 		}
 	}
 
+	SortClusters(clstrs)
 	return clstrs
 }
 
@@ -335,6 +343,11 @@ func SortCluster(clstr Cluster) {
 	if mn := Mean(clstr); mn != nil {
 		sort.SliceStable(clstr, func(i, j int) bool { return SquaredDistance(mn, clstr[i]) < SquaredDistance(mn, clstr[j]) })
 	}
+}
+
+// SortClusters sorts a set of clusters.
+func SortClusters(clstrs []Cluster) {
+	sort.SliceStable(clstrs, func(i, j int) bool { return CompareClusters(clstrs[i], clstrs[j]) < 0 })
 }
 
 // SortAllClusters sorts each cluster. The set of clusters is NOT sorted.
