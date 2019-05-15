@@ -21,7 +21,7 @@ func KMeans(k int, pnts []Point, normalize bool) []Cluster {
 		changed   = true                             // Indicates if a cluster was altered
 		mns       []Point                            // Means of clusters
 		minIndex  int                                // Index of cluster having smallest squared distance to a point
-		n         int                                // Number of points
+		n         = len(pnts)                        // Number of points
 		sd, minSD float64                            // Squared distance; minimum squared distance
 	)
 
@@ -32,6 +32,12 @@ func KMeans(k int, pnts []Point, normalize bool) []Cluster {
 	for changed {
 		changed = false
 		mns = Means(clstrs)
+		for i := range mns {
+			if mns[i] == nil {
+				seed()
+				copy(mns[i], pnts[rand.Intn(n)])
+			}
+		}
 
 		for h := range clstrs {
 			// Each cluster is sorted, so the most variant point is at index clstrs[h][sizes[h]-1]. When the point clstrs[h][i] variance is small enough to not move to another cluster, then we can move on to the next cluster and ignore the other points on the range [0,i). So, h counts down and halts early.
@@ -40,7 +46,7 @@ func KMeans(k int, pnts []Point, normalize bool) []Cluster {
 				minIndex = h
 				minSD = SquaredDistance(mns[h], clstrs[h][i])
 				for j := range clstrs {
-					if h == j { // if h == j || sizes[j] == 0 { // Experimental. See below comment.
+					if h == j {
 						// If h = j, then we are comparing the same cluster. If the size of cluster j is zero, then, obviously, there's no points to compare.
 						continue
 					}
@@ -59,7 +65,7 @@ func KMeans(k int, pnts []Point, normalize bool) []Cluster {
 
 				// Move point i in cluster h to the nearest cluster and update sizes and changed.
 				clstrs[minIndex] = append(clstrs[minIndex], clstrs[h][i])
-				if i < sizes[h]-1 {
+				if i+1 < sizes[h] {
 					clstrs[h] = append(clstrs[h][:i], clstrs[h][i+1:]...)
 				} else {
 					clstrs[h] = clstrs[h][:i]
@@ -70,7 +76,6 @@ func KMeans(k int, pnts []Point, normalize bool) []Cluster {
 				changed = true
 			}
 
-			// Experimental: Choose a random point as a new mean. This point won't be in the jth cluster, but its value will hopefully reset the empty cluster.
 			if sizes[h] == 0 {
 				seed()
 				copy(mns[h], pnts[int(rand.Intn(n))])
@@ -92,7 +97,7 @@ func OptimalKMeans(pnts []Point, normalize bool) (int, []Cluster) {
 		n        = len(pnts) // Number of points
 		vars     []float64   // Mean variances for each run
 		varsPnts []Point     // Vars converted to points
-		clstrs   []Cluster   // Clusters returned with each run
+		// clstrs   []Cluster   // Clusters returned with each run
 	)
 	if n <= 10 {
 		// Run and track the mean variance.
@@ -106,27 +111,48 @@ func OptimalKMeans(pnts []Point, normalize bool) (int, []Cluster) {
 		// Run 2-means on the variances to find the elbow point at which smaller numbers of clusters increases the mean variance.
 		varsClstrs := KMeans(2, varsPnts, normalize)
 
-		// Find the maximum variance in second cluster, which contains variances on the right of the elbow.
-		var v, maxVars float64 // Variance; maximum variance
-		for _, varPnt := range varsClstrs[1] {
-			v = varPnt[0]
-			if maxVars < v {
+		// Find the maximum variance in the first cluster, which contains variances on the right of the elbow. Recall the clusters are sorted. It is assumed the first cluster has the lower mean variance (higher k).
+		// var v, maxVars float64 // Variance; maximum variance
+		// for _, varPnt := range varsClstrs[0] {
+		// 	v = varPnt[0]
+		// 	if maxVars < v {
+		// 		maxVars = v
+		// 	}
+		// }
+
+		// // Find the index of the maximum variance.
+		// var k int // Optimal k
+		// for i := range vars {
+		// 	if vars[i] == maxVars {
+		// 		k = i + 1 // Index is one less than the cluster count
+		// 		break
+		// 	}
+		// }
+
+		var (
+			maxVarsIndex int
+			maxVars      = math.MaxFloat64
+			v            float64
+		)
+		for i := range varsClstrs {
+			v = Variance(varsClstrs[i])
+			if v < maxVars {
 				maxVars = v
+				maxVarsIndex = i
 			}
 		}
 
-		// Find the index of the maximum variance.
-		var k int // Optimal k
-		for i := range vars {
-			if vars[i] == maxVars {
-				k = i + 1 // Index is one less than the cluster count
-				break
+		var k int
+		for i := range varsClstrs[maxVarsIndex] {
+			v = varsClstrs[maxVarsIndex][i][0]
+			if maxVars < v {
+				maxVars = v
+				k = i
 			}
 		}
 
 		// Return the optimal clustering solution.
-		clstrs = KMeans(k, pnts, normalize)
-		return k, clstrs
+		return k, KMeans(k, pnts, normalize)
 	}
 
 	return 0, nil

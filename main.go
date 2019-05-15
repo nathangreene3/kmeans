@@ -10,7 +10,7 @@ import (
 var seeded bool
 
 func main() {
-	test3()
+	test1()
 }
 
 func test0() {
@@ -86,8 +86,7 @@ func test3() {
 	variances := make([]float64, 0, n)
 	var v float64
 	var clstrs []Cluster
-	// for k := 1; k <= n; k++ {
-	for k := 2; k <= 2; k++ {
+	for k := 1; k <= n; k++ {
 		fmt.Printf("k = %d\n", k)
 		clstrs = KMeans(k, pnts, true)
 		v = 0
