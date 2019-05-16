@@ -10,7 +10,7 @@ import (
 var seeded bool
 
 func main() {
-	test1()
+	test3()
 }
 
 func test0() {
