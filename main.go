@@ -10,7 +10,7 @@ import (
 var seeded bool
 
 func main() {
-	test3()
+	test4()
 }
 
 func test0() {
@@ -103,6 +103,40 @@ func test3() {
 		variances = append(variances, v/float64(k))
 	}
 
-	// fmt.Println(asciigraph.Plot(variances))
+	fmt.Println(asciigraph.Plot(variances))
+	fmt.Printf("variances: %0.2f\n", variances)
+}
+
+func test4() {
+	pnts := []Point{
+		Point{5, 10},
+		Point{5, 10},
+		Point{5, 10},
+		Point{5, 10},
+		Point{5, 10},
+	}
+
+	n := len(pnts)
+	variances := make([]float64, 0, n)
+	var v float64
+	var clstrs []Cluster
+	for k := 1; k <= n; k++ {
+		fmt.Printf("k = %d\n", k)
+		clstrs = KMeans(k, pnts, false)
+		v = 0
+		for i := range clstrs {
+			fmt.Printf("cluster %d\n", i)
+			for j := range clstrs[i] {
+				fmt.Printf("point %d: %0.2f\n", j, clstrs[i][j])
+			}
+
+			fmt.Printf("mean: %0.2f\n\n", Mean(clstrs[i]))
+			v += Variance(clstrs[i])
+		}
+
+		variances = append(variances, v/float64(k))
+	}
+
+	fmt.Println(asciigraph.Plot(variances))
 	fmt.Printf("variances: %0.2f\n", variances)
 }

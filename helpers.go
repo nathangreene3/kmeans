@@ -36,3 +36,21 @@ func mean(x []float64) float64 {
 
 	return v / float64(len(x))
 }
+
+// max returns the maximum value.
+func max(m, n int) int {
+	if m < n {
+		return n
+	}
+
+	return m
+}
+
+// min returns the minimum value.
+func min(m, n int) int {
+	if m < n {
+		return m
+	}
+
+	return n
+}
