@@ -22,6 +22,24 @@ const (
 	LexiSort
 )
 
+// assignPoint returns the index of the closest point (a cluster mean) to a given point.
+func assignPoint(pnt Point, mns []Point) int {
+	var assignment int
+	var (
+		sd    float64
+		minSD = math.MaxFloat64
+	)
+	for i := range mns {
+		sd = SquaredDistance(mns[i], pnt)
+		if sd < minSD {
+			minSD = sd
+			assignment = i
+		}
+	}
+
+	return assignment
+}
+
 // KMeans clusters a set of points into k groups. Potentially, clusters can be empty, so multiple attempts should be made.
 func KMeans(k int, pnts []Point, normalize bool) []Cluster {
 	// Move points to their nearest cluster until they no longer move with each pass (indicated by the changed boolean).
@@ -145,9 +163,9 @@ func validate(pnts []Point) {
 // initClusters returns a set of k sorted clusters.
 func initClusters(k int, pnts []Point, normalize bool) []Cluster {
 	validate(pnts)
-
+	pnts = shufflePoints(pnts)
 	if normalize {
-		pnts = shufflePoints(NormalizePoints(pnts))
+		pnts = NormalizePoints(pnts)
 	}
 
 	// Each cluster contains n/k points. Remainders will be added to the last cluster (index k-1).
