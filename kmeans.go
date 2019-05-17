@@ -147,7 +147,7 @@ func initClusters(k int, pnts []Point, normalize bool) []Cluster {
 	validate(pnts)
 
 	if normalize {
-		pnts = shufflePoints(Normalize(pnts))
+		pnts = shufflePoints(NormalizePoints(pnts))
 	}
 
 	// Each cluster contains n/k points. Remainders will be added to the last cluster (index k-1).
@@ -175,12 +175,12 @@ func initClusters(k int, pnts []Point, normalize bool) []Cluster {
 	}
 
 	SortCluster(clstrs[k-1], VarSort)
-	return condenseClusters(clstrs)
+	return coalesceClusters(clstrs)
 }
 
-// Normalize each dimension in each point to the range [-1,1] assuming the largest value for each dimension is within the scope of the points provided.
-func Normalize(pnts []Point) []Point {
-	maxPnt := MaxPoint(pnts)
+// NormalizePoints each dimension in each point to the range [-1,1] assuming the largest value for each dimension is within the scope of the points provided.
+func NormalizePoints(pnts []Point) []Point {
+	maxPnt := maxPoint(pnts)
 
 	// Check if max point is normal. If it is, the points are already normalized.
 	var notNormal bool
@@ -204,24 +204,29 @@ func Normalize(pnts []Point) []Point {
 	return pnts
 }
 
-// condenseClusters ensures clusters containing equivalent points are placed in one cluster.
-func condenseClusters(clstrs []Cluster) []Cluster {
-	clstrs = SortAllClusters(clstrs, LexiSort)
-	n := len(clstrs)
-	var a, comparison int
+// coalesceClusters ensures clusters containing equivalent points are placed in one cluster.
+func coalesceClusters(clstrs []Cluster) []Cluster {
+	clstrs = SortAllClusters(clstrs, VarSort)
 
-	for i := 0; i < n; i++ {
-		for a = 0; a < len(clstrs[i]); a++ {
-			if a+1 < len(clstrs[i]) && ComparePoints(clstrs[i][a], clstrs[i][a+1]) == 0 {
+	var (
+		numClstrs  = len(clstrs)
+		maxIJ      int
+		comparison int
+	)
+
+	for i := 0; i < numClstrs; i++ {
+		maxIJ = len(clstrs[i])
+		for j := 0; j < maxIJ; j++ {
+			if j+1 < maxIJ && ComparePoints(clstrs[i][j], clstrs[i][j+1]) == 0 {
 				continue
 			}
 
-			for j := i + 1; j < n; j++ {
-				for b := 0; b < len(clstrs[j]); b++ {
-					comparison = ComparePoints(clstrs[i][a], clstrs[j][b])
+			for k := i + 1; k < numClstrs; k++ {
+				for b := 0; b < len(clstrs[k]); b++ {
+					comparison = ComparePoints(clstrs[i][j], clstrs[k][b])
 					if comparison == 0 {
-						clstrs[i], clstrs[j] = movePoint(b, clstrs[i], clstrs[j])
-						b--
+						clstrs[i], clstrs[k] = movePoint(b, clstrs[i], clstrs[k])
+						continue
 					}
 
 					if 0 < comparison {
@@ -231,7 +236,7 @@ func condenseClusters(clstrs []Cluster) []Cluster {
 			}
 		}
 
-		clstrs[i] = SortCluster(clstrs[i], LexiSort)
+		clstrs[i] = SortCluster(clstrs[i], VarSort)
 	}
 
 	return clstrs
@@ -240,7 +245,7 @@ func condenseClusters(clstrs []Cluster) []Cluster {
 // randPnt returns a random point in the space spanned by the maximum point on a set of points. Each dimension is a random value on (-r,r) where r is the maximum value in each dimension on the set of points. It does NOT return a point in the set.
 func randPnt(pnts []Point) Point {
 	seed()
-	pnt := MaxPoint(pnts)
+	pnt := maxPoint(pnts)
 	for i := range pnt {
 		pnt[i] *= 2*rand.Float64() - 1
 	}
@@ -248,8 +253,8 @@ func randPnt(pnts []Point) Point {
 	return pnt
 }
 
-// MaxPoint returns a point in which each dimension is the largest non-negative value observed in the set of points.
-func MaxPoint(pnts []Point) Point {
+// maxPoint returns a point in which each dimension is the largest non-negative value observed in the set of points.
+func maxPoint(pnts []Point) Point {
 	if len(pnts) == 0 {
 		return nil
 	}
@@ -289,10 +294,10 @@ func shufflePoints(pnts []Point) []Point {
 func movePoint(i int, destClstr, srcClstr Cluster) (Cluster, Cluster) {
 	destClstr = append(destClstr, srcClstr[i])
 	if i+1 < len(srcClstr) {
-		return append(srcClstr[:i], srcClstr[i+1:]...), destClstr
+		return SortCluster(destClstr, VarSort), append(srcClstr[:i], srcClstr[i+1:]...)
 	}
 
-	return srcClstr[:i], destClstr
+	return SortCluster(destClstr, VarSort), srcClstr[:i]
 }
 
 // Means returns the set of points each representing the mean (center) of each cluster.
