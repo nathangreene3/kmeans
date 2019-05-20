@@ -5,6 +5,9 @@ import (
 	"time"
 )
 
+// seeded indicates if the random number generator has been seeded.
+var seeded bool
+
 // seed the random number generator.
 func seed() {
 	if !seeded {
@@ -15,8 +18,9 @@ func seed() {
 
 // maxPow returns the largest power p such that b^p <= n for a given base b > 0. Assumes b,n > 0.
 func maxPow(b, n int) int {
-	var p int                       // Power to return
-	for bp := b; bp <= n; bp *= b { // bp = b^p
+	var p int // Power to return
+	for bp := b; bp <= n; bp *= b {
+		// bp = b^p
 		p++
 	}
 

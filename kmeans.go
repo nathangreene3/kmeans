@@ -17,18 +17,52 @@ type SortOpt int
 
 // Model holds k-means clusters and their meta data.
 type Model struct {
-	k      int       // Number of clusters
-	clstrs []Cluster // Clusters returned from k-means
-	mns    []Point   // Means of clusters
-	vars   []float64 // Variances of clusters
+	k          int       // Number of clusters
+	clstrs     []Cluster // Clusters returned from k-means
+	mns        []Point   // Means of clusters
+	vars       []float64 // Variances of clusters
+	maxPnt     Point     // Max representing point
+	normalized bool      // Indicates if normalized
 }
 
 const (
 	// VarSort dictates points will be compared by variance to the cluster mean.
-	VarSort SortOpt = iota
+	VarSort SortOpt = iota + 1
+
 	// LexiSort dictates points will be compared by the default comparer, which is lexicographic.
 	LexiSort
 )
+
+// ----------------------------------------------------------------
+// Model methods
+// ----------------------------------------------------------------
+
+// NewModel returns a trained k-means model.
+func NewModel(k int, pnts []Point, normalize bool) *Model {
+	mdl := &Model{
+		k:          k,
+		maxPnt:     MaxRepPoint(pnts),
+		normalized: normalize,
+	}
+	var clstrs []Cluster // k-means result
+	for i := 0; i < 3; i++ {
+		clstrs = KMeans(k, pnts, normalize)
+		if mdl.clstrs == nil {
+			mdl.clstrs = clstrs
+			mdl.mns = Means(clstrs)
+			mdl.vars = Variances(clstrs)
+			continue
+		}
+
+		if MeanWeightedVariance(clstrs) < MeanWeightedVariance(mdl.clstrs) {
+			mdl.clstrs = clstrs
+			mdl.mns = Means(clstrs)
+			mdl.vars = Variances(clstrs)
+		}
+	}
+
+	return mdl
+}
 
 // AssignPoint a point to a cluster.
 func (mdl *Model) AssignPoint(pnt Point) int {
@@ -37,6 +71,11 @@ func (mdl *Model) AssignPoint(pnt Point) int {
 		sd         float64
 		minSD      = math.MaxFloat64
 	)
+
+	if mdl.normalized {
+		pnt = NormalizePoint(pnt, mdl.maxPnt)
+	}
+
 	for i := range mdl.mns {
 		sd = SquaredDistance(mdl.mns[i], pnt)
 		if sd < minSD {
@@ -48,14 +87,19 @@ func (mdl *Model) AssignPoint(pnt Point) int {
 	return assignment
 }
 
+// K returns the number of clusters.
+func (mdl *Model) K() int {
+	return mdl.k
+}
+
 // Mean returns the Mean of cluster i.
 func (mdl *Model) Mean(i int) Point {
-	return copyPoint(mdl.mns[i])
+	return CopyPoint(mdl.mns[i])
 }
 
 // Means returns the mean points of the clusters.
 func (mdl *Model) Means() []Point {
-	return copyPoints(mdl.mns)
+	return CopyPoints(mdl.mns)
 }
 
 // Variance returns the variance of cluster i.
@@ -68,39 +112,27 @@ func (mdl *Model) Variances() []float64 {
 	return copyFloat64s(mdl.vars)
 }
 
+// MaxRepPoint returns the max representing point.
+func (mdl *Model) MaxRepPoint() Point {
+	return CopyPoint(mdl.maxPnt)
+}
+
+// Normalized returns true if the model was normalized and false if otherwise.
+func (mdl *Model) Normalized() bool {
+	return mdl.normalized
+}
+
 // Sort each cluster in a model.
 func (mdl *Model) Sort(st SortOpt) {
 	SortAllClusters(mdl.clstrs, st)
 }
 
-// NewModel returns a trained k-means model.
-func NewModel(k int, pnts []Point, normalize bool) *Model {
-	clstrs := KMeans(k, copyPoints(pnts), normalize)
-	return &Model{
-		k:      k,
-		clstrs: clstrs,
-		mns:    Means(clstrs),
-		vars:   Variances(clstrs),
-	}
-}
+// ----------------------------------------------------------------
+// k-Means clustering methods
+// ----------------------------------------------------------------
 
-// clustersToPoints joins points within a set of clusters into a set of points.
-func clustersToPoints(clstrs []Cluster) []Point {
-	var n int
-	for i := range clstrs {
-		n += len(clstrs[i])
-	}
-
-	pnts := make([]Point, 0, n)
-	for i := range clstrs {
-		pnts = append(pnts, clstrs[i]...)
-	}
-
-	return pnts
-}
-
-// assignPoint returns the index of the closest point (a cluster mean) to a given point.
-func assignPoint(pnt Point, mns []Point) int {
+// AssignPoint returns the index of the closest point (a cluster mean) to a given point.
+func AssignPoint(pnt Point, mns []Point) int {
 	var (
 		assignment int
 		sd         float64
@@ -164,7 +196,7 @@ func KMeans(k int, pnts []Point, normalize bool) []Cluster {
 				}
 
 				// Move point i in cluster h to the nearest cluster and update sizes and changed.
-				clstrs[minIndex], clstrs[h] = movePoint(i, clstrs[minIndex], clstrs[h])
+				clstrs[minIndex], clstrs[h] = MovePoint(i, clstrs[minIndex], clstrs[h])
 				changed = true
 			}
 		}
@@ -219,25 +251,6 @@ func OptimalKMeans(pnts []Point, normalize bool) (int, []Cluster) {
 	// return 0, nil
 }
 
-// validate panics if there are no points or if any points are of unequal or zero dimension.
-func validate(pnts []Point) {
-	numPnts := len(pnts)
-	if numPnts == 0 {
-		panic("validate: no points")
-	}
-
-	dims := len(pnts[0])
-	if dims == 0 {
-		panic("validate: dimensionless point")
-	}
-
-	for i := 1; i < numPnts; i++ {
-		if dims != len(pnts[i]) {
-			panic("validate: dimension mismatch")
-		}
-	}
-}
-
 // initClusters returns a set of k sorted clusters.
 func initClusters(k int, pnts []Point, normalize bool) []Cluster {
 	validate(pnts)
@@ -274,9 +287,40 @@ func initClusters(k int, pnts []Point, normalize bool) []Cluster {
 	return coalesceClusters(clstrs)
 }
 
+// validate panics if there are no points or if any points are of unequal or zero dimension.
+func validate(pnts []Point) {
+	numPnts := len(pnts)
+	if numPnts == 0 {
+		panic("validate: no points")
+	}
+
+	dims := len(pnts[0])
+	if dims == 0 {
+		panic("validate: dimensionless point")
+	}
+
+	for i := 1; i < numPnts; i++ {
+		if dims != len(pnts[i]) {
+			panic("validate: dimension mismatch")
+		}
+	}
+}
+
+// NormalizePoint returns a point normalized by a maximum representative point. Assumes the point and max point are of equal length.
+func NormalizePoint(pnt, maxPoint Point) Point {
+	normPnt := make(Point, len(pnt))
+	for i, v := range maxPoint {
+		if 0 < v {
+			normPnt[i] = pnt[i] / v
+		}
+	}
+
+	return normPnt
+}
+
 // NormalizePoints each dimension in each point to the range [-1,1] assuming the largest value for each dimension is within the scope of the points provided.
 func NormalizePoints(pnts []Point) []Point {
-	maxPnt := maxPoint(pnts)
+	maxPnt := MaxRepPoint(pnts)
 
 	// Check if max point is normal. If it is, the points are already normalized.
 	var notNormal bool
@@ -288,60 +332,21 @@ func NormalizePoints(pnts []Point) []Point {
 	}
 
 	if notNormal {
+		normPnts := make([]Point, 0, len(pnts))
 		for i := range pnts {
-			for j, v := range maxPnt {
-				if v != 0 {
-					pnts[i][j] /= v
-				}
-			}
-		}
-	}
-
-	return pnts
-}
-
-// coalesceClusters ensures clusters containing equivalent points are placed in one cluster.
-func coalesceClusters(clstrs []Cluster) []Cluster {
-	clstrs = SortAllClusters(clstrs, VarSort)
-
-	var (
-		numClstrs  = len(clstrs) // Number of clusters
-		numPntsI   int           // Number of points in cluster i
-		comparison int           // Comparison result
-	)
-	for i := 0; i < numClstrs; i++ {
-		numPntsI = len(clstrs[i])
-		for j := 0; j < numPntsI; j++ {
-			if j+1 < numPntsI && ComparePoints(clstrs[i][j], clstrs[i][j+1]) == 0 {
-				// Points j and j+1 are equal, so keep iterating until the last equal point is found.
-				continue
-			}
-
-			for k := i + 1; k < numClstrs; k++ {
-				for b := 0; b < len(clstrs[k]); b++ {
-					comparison = ComparePoints(clstrs[i][j], clstrs[k][b])
-					if comparison == 0 {
-						clstrs[i], clstrs[k] = movePoint(b, clstrs[i], clstrs[k])
-						continue
-					}
-
-					if 0 < comparison {
-						break
-					}
-				}
-			}
+			normPnts = append(normPnts, NormalizePoint(pnts[i], maxPnt))
 		}
 
-		clstrs[i] = SortCluster(clstrs[i], VarSort)
+		return normPnts
 	}
 
-	return clstrs
+	return CopyPoints(pnts)
 }
 
 // randomPoint returns a random point in the space spanned by the maximum point on a set of points. Each dimension is a random value on (-r,r) where r is the maximum value in each dimension on the set of points. It does NOT return a point in the set.
 func randomPoint(pnts []Point) Point {
 	seed()
-	pnt := maxPoint(pnts)
+	pnt := MaxRepPoint(pnts)
 	for i := range pnt {
 		pnt[i] *= 2*rand.Float64() - 1
 	}
@@ -349,8 +354,8 @@ func randomPoint(pnts []Point) Point {
 	return pnt
 }
 
-// maxPoint returns a point in which each dimension is the largest non-negative value observed in the set of points.
-func maxPoint(pnts []Point) Point {
+// MaxRepPoint returns a point in which each dimension is the largest non-negative value observed in the set of points.
+func MaxRepPoint(pnts []Point) Point {
 	if len(pnts) == 0 {
 		return nil
 	}
@@ -371,28 +376,6 @@ func maxPoint(pnts []Point) Point {
 	return maxPnt
 }
 
-// shufflePoints randomly orders a set of points.
-func shufflePoints(pnts []Point) []Point {
-	seed()
-	rand.Shuffle(len(pnts), func(i, j int) {
-		temp := pnts[i]
-		pnts[i] = pnts[j]
-		pnts[j] = temp
-	})
-
-	return pnts
-}
-
-// movePoint i from the source cluster to the destination cluster.
-func movePoint(i int, destClstr, srcClstr Cluster) (Cluster, Cluster) {
-	destClstr = append(destClstr, srcClstr[i])
-	if i+1 < len(srcClstr) {
-		return SortCluster(destClstr, VarSort), append(srcClstr[:i], srcClstr[i+1:]...)
-	}
-
-	return SortCluster(destClstr, VarSort), srcClstr[:i]
-}
-
 // Means returns the set of points each representing the mean (center) of each cluster.
 func Means(clstrs []Cluster) []Point {
 	mns := make([]Point, 0, len(clstrs))
@@ -410,7 +393,7 @@ func Mean(clstr Cluster) Point {
 	case 0:
 		return nil
 	case 1:
-		return copyPoint(clstr[0])
+		return CopyPoint(clstr[0])
 	}
 
 	d := len(clstr[0])
@@ -465,6 +448,26 @@ func MeanVariance(clstrs []Cluster) float64 {
 	return v / float64(len(clstrs))
 }
 
+// MeanWeightedVariance returns the mean of the variances weighted by the number of points in each cluster.
+func MeanWeightedVariance(clstrs []Cluster) float64 {
+	var (
+		n float64 // Number of points in clusters
+		s float64 // Number of points in cluster i
+		v float64 // Sum of size-weighted variances
+	)
+	for i := range clstrs {
+		s = float64(len(clstrs[i]))
+		n += s
+		v += Variance(clstrs[i]) * s
+	}
+
+	return v / n
+}
+
+// ----------------------------------------------------------------
+// Distance metrics
+// ----------------------------------------------------------------
+
 // SquaredDistance returns the Euclidean metric on two points.
 func SquaredDistance(pnt0, pnt1 Point) float64 {
 	var (
@@ -483,6 +486,10 @@ func SquaredDistance(pnt0, pnt1 Point) float64 {
 func Distance(pnt0, pnt1 Point) float64 {
 	return math.Sqrt(SquaredDistance(pnt0, pnt1))
 }
+
+// ----------------------------------------------------------------
+// Sorting and comparison methods
+// ----------------------------------------------------------------
 
 // SortCluster sorts a cluster on the squared distance.
 func SortCluster(clstr Cluster, st SortOpt) Cluster {
@@ -532,14 +539,14 @@ func CompareClusters(clstr0, clstr1 Cluster) int {
 	m, n := len(clstr0), len(clstr1)
 	if m == 0 {
 		if n == 0 {
-			return 0 // Nothing to compare
+			return 0
 		}
 
-		return -1 // Point 0 is empty
+		return -1
 	}
 
 	if n == 0 {
-		return 1 // Point 1 is empty
+		return 1
 	}
 
 	maxIndex := min(m, n)
@@ -552,49 +559,131 @@ func CompareClusters(clstr0, clstr1 Cluster) int {
 	}
 
 	if m < n {
-		return -1 // Point 0 is shorter than point 1 (while equal over the range [0,m))
+		// Point 0 is shorter than point 1 (while equal over the range [0,m))
+		return -1
 	}
 
 	if n < m {
-		return 1 // Point 1 is shorter than point 0 (while equal over the range [0,n))
+		// Point 1 is shorter than point 0 (while equal over the range [0,n))
+		return 1
 	}
 
-	return 0 // Points are equal in length and in each value
+	// Points are equal in length and in each value
+	return 0
 }
 
-// copyPoint returns a copy of a point.
-func copyPoint(pnt Point) Point {
+// ----------------------------------------------------------------
+// Copy and slice manipulation methods
+// ----------------------------------------------------------------
+
+// CopyPoint returns a copy of a point.
+func CopyPoint(pnt Point) Point {
 	cpy := make(Point, len(pnt))
 	copy(cpy, pnt)
 	return cpy
 }
 
-// copyPoints returns a copy of a set of points.
-func copyPoints(pnts []Point) []Point {
+// CopyPoints returns a copy of a set of points.
+func CopyPoints(pnts []Point) []Point {
 	cpy := make([]Point, 0, len(pnts))
 	for i := range pnts {
-		cpy = append(cpy, copyPoint(pnts[i]))
+		cpy = append(cpy, CopyPoint(pnts[i]))
 	}
 
 	return cpy
 }
 
-// copyCluster returns a copy of a cluster.
-func copyCluster(clstr Cluster) Cluster {
+// CopyCluster returns a copy of a cluster.
+func CopyCluster(clstr Cluster) Cluster {
 	cpy := make(Cluster, 0, len(clstr))
 	for i := range clstr {
-		cpy = append(cpy, copyPoint(clstr[i]))
+		cpy = append(cpy, CopyPoint(clstr[i]))
 	}
 
 	return cpy // Cluster(copyPoints([]Point(clstr)))
 }
 
-// copyClusters returns a copy of a set of clusters.
-func copyClusters(clstrs []Cluster) []Cluster {
+// CopyClusters returns a copy of a set of clusters.
+func CopyClusters(clstrs []Cluster) []Cluster {
 	cpy := make([]Cluster, 0, len(clstrs))
 	for i := range clstrs {
-		cpy = append(cpy, copyCluster(clstrs[i]))
+		cpy = append(cpy, CopyCluster(clstrs[i]))
 	}
 
 	return cpy
+}
+
+// coalesceClusters ensures clusters containing equivalent points are placed in one cluster. For each cluster i, the points in each cluster j are compared and equivalent points are moved to cluster i.
+func coalesceClusters(clstrs []Cluster) []Cluster {
+	clstrs = SortAllClusters(clstrs, VarSort)
+
+	var (
+		numClstrs  = len(clstrs) // Number of clusters
+		numPntsI   int           // Number of points in cluster i
+		comparison int           // Comparison result
+	)
+	for i := 0; i < numClstrs; i++ {
+		numPntsI = len(clstrs[i])
+		for j := 0; j < numPntsI; j++ {
+			if j+1 < numPntsI && ComparePoints(clstrs[i][j], clstrs[i][j+1]) == 0 {
+				// Points j and j+1 are equal, so keep iterating until the last equal point is found.
+				continue
+			}
+
+			for k := i + 1; k < numClstrs; k++ {
+				for b := 0; b < len(clstrs[k]); b++ {
+					comparison = ComparePoints(clstrs[i][j], clstrs[k][b])
+					if comparison == 0 {
+						clstrs[i], clstrs[k] = MovePoint(b, clstrs[i], clstrs[k])
+						continue
+					}
+
+					if 0 < comparison {
+						break
+					}
+				}
+			}
+		}
+
+		clstrs[i] = SortCluster(clstrs[i], VarSort)
+	}
+
+	return clstrs
+}
+
+// joinClusters into a single, sorted cluster (sorted on variance).
+func joinClusters(clstrs []Cluster) Cluster {
+	var n int
+	for i := range clstrs {
+		n += len(clstrs[i])
+	}
+
+	clstr := make(Cluster, 0, n)
+	for i := range clstrs {
+		clstr = append(clstr, clstrs[i]...)
+	}
+
+	return SortCluster(clstr, VarSort)
+}
+
+// shufflePoints randomly orders a set of points.
+func shufflePoints(pnts []Point) []Point {
+	seed()
+	rand.Shuffle(len(pnts), func(i, j int) {
+		temp := pnts[i]
+		pnts[i] = pnts[j]
+		pnts[j] = temp
+	})
+
+	return pnts
+}
+
+// MovePoint i from the source cluster to the destination cluster. Returns (destClstr, srcClstr).
+func MovePoint(i int, destClstr, srcClstr Cluster) (Cluster, Cluster) {
+	destClstr = append(destClstr, srcClstr[i])
+	if i+1 < len(srcClstr) {
+		return SortCluster(destClstr, VarSort), append(srcClstr[:i], srcClstr[i+1:]...)
+	}
+
+	return SortCluster(destClstr, VarSort), srcClstr[:i]
 }
