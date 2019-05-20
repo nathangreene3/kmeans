@@ -15,6 +15,14 @@ type Cluster []Point
 // SortOpt indicates how a cluster is sorted.
 type SortOpt int
 
+// Model holds k-means clusters and their meta data.
+type Model struct {
+	k      int       // Number of clusters
+	clstrs []Cluster // Clusters returned from k-means
+	mns    []Point   // Means of clusters
+	vars   []float64 // Variances of clusters
+}
+
 const (
 	// VarSort dictates points will be compared by variance to the cluster mean.
 	VarSort SortOpt = iota
@@ -22,12 +30,81 @@ const (
 	LexiSort
 )
 
+// AssignPoint a point to a cluster.
+func (mdl *Model) AssignPoint(pnt Point) int {
+	var (
+		assignment int
+		sd         float64
+		minSD      = math.MaxFloat64
+	)
+	for i := range mdl.mns {
+		sd = SquaredDistance(mdl.mns[i], pnt)
+		if sd < minSD {
+			minSD = sd
+			assignment = i
+		}
+	}
+
+	return assignment
+}
+
+// Mean returns the Mean of cluster i.
+func (mdl *Model) Mean(i int) Point {
+	return copyPoint(mdl.mns[i])
+}
+
+// Means returns the mean points of the clusters.
+func (mdl *Model) Means() []Point {
+	return copyPoints(mdl.mns)
+}
+
+// Variance returns the variance of cluster i.
+func (mdl *Model) Variance(i int) float64 {
+	return mdl.vars[i]
+}
+
+// Variances returns a copy of the variances of the clustes.
+func (mdl *Model) Variances() []float64 {
+	return copyFloat64s(mdl.vars)
+}
+
+// Sort each cluster in a model.
+func (mdl *Model) Sort(st SortOpt) {
+	SortAllClusters(mdl.clstrs, st)
+}
+
+// NewModel returns a trained k-means model.
+func NewModel(k int, pnts []Point, normalize bool) *Model {
+	clstrs := KMeans(k, copyPoints(pnts), normalize)
+	return &Model{
+		k:      k,
+		clstrs: clstrs,
+		mns:    Means(clstrs),
+		vars:   Variances(clstrs),
+	}
+}
+
+// clustersToPoints joins points within a set of clusters into a set of points.
+func clustersToPoints(clstrs []Cluster) []Point {
+	var n int
+	for i := range clstrs {
+		n += len(clstrs[i])
+	}
+
+	pnts := make([]Point, 0, n)
+	for i := range clstrs {
+		pnts = append(pnts, clstrs[i]...)
+	}
+
+	return pnts
+}
+
 // assignPoint returns the index of the closest point (a cluster mean) to a given point.
 func assignPoint(pnt Point, mns []Point) int {
-	var assignment int
 	var (
-		sd    float64
-		minSD = math.MaxFloat64
+		assignment int
+		sd         float64
+		minSD      = math.MaxFloat64
 	)
 	for i := range mns {
 		sd = SquaredDistance(mns[i], pnt)
@@ -58,7 +135,7 @@ func KMeans(k int, pnts []Point, normalize bool) []Cluster {
 		mns = Means(clstrs)
 		for i := range mns {
 			if mns[i] == nil {
-				randPnt(pnts)
+				randomPoint(pnts)
 			}
 		}
 
@@ -103,42 +180,43 @@ func OptimalKMeans(pnts []Point, normalize bool) (int, []Cluster) {
 		vars     []float64
 		varsPnts []Point // Vars converted to points
 	)
+	n = 10 // Halt at k = 1..n until testing is done.
 
-	if n <= 10 {
-		// Run k-means on k = 1..n and track the mean variance.
-		varsPnts = make([]Point, 0, n)
-		for numClstrs := 1; numClstrs <= n; numClstrs++ {
-			vars = append(vars, MeanVariance(KMeans(numClstrs, pnts, normalize)))
-			varsPnts = append(varsPnts, Point{vars[numClstrs-1]})
-		}
-
-		// Run 2-means on the variances to find the elbow point at which smaller numbers of clusters increases the mean variance.
-		var (
-			k          int                              // Optimal k
-			minIndex   int                              // Index of cluster having the smallest mean variance
-			v          float64                          // Variance
-			maxVars    float64                          // Maximum variance
-			varsClstrs = KMeans(2, varsPnts, normalize) // Variance clusters run on k = 2 to find the elbow point k
-		)
-
-		if 0 < ComparePoints(Mean(varsClstrs[0]), Mean(varsClstrs[1])) {
-			// Mean var of cluster 0 > mean var of cluster 1
-			minIndex = 1
-		}
-
-		// Find the index of the largest value in the cluster with the smaller mean variance.
-		for i := range varsClstrs[minIndex] {
-			v = varsClstrs[minIndex][i][0]
-			if maxVars < v {
-				maxVars = v
-				k = i + 1
-			}
-		}
-
-		return k, KMeans(k, pnts, normalize)
+	// if n <= 10 {
+	// Run k-means on k = 1..n and track the mean variance.
+	varsPnts = make([]Point, 0, n)
+	for numClstrs := 1; numClstrs <= n; numClstrs++ {
+		vars = append(vars, MeanVariance(KMeans(numClstrs, pnts, normalize)))
+		varsPnts = append(varsPnts, Point{vars[numClstrs-1]})
 	}
 
-	return 0, nil
+	// Run 2-means on the variances to find the elbow point at which smaller numbers of clusters increases the mean variance.
+	var (
+		k          int                              // Optimal k
+		minIndex   int                              // Index of cluster having the smallest mean variance
+		v          float64                          // Variance
+		maxVars    float64                          // Maximum variance
+		varsClstrs = KMeans(2, varsPnts, normalize) // Variance clusters run on k = 2 to find the elbow point k
+	)
+
+	if 0 < ComparePoints(Mean(varsClstrs[0]), Mean(varsClstrs[1])) {
+		// Mean var of cluster 0 > mean var of cluster 1
+		minIndex = 1
+	}
+
+	// Find the index of the largest value in the cluster with the smaller mean variance.
+	for i := range varsClstrs[minIndex] {
+		v = varsClstrs[minIndex][i][0]
+		if maxVars < v {
+			maxVars = v
+			k = i + 1
+		}
+	}
+
+	return k, KMeans(k, pnts, normalize)
+	// }
+
+	// return 0, nil
 }
 
 // validate panics if there are no points or if any points are of unequal or zero dimension.
@@ -227,15 +305,15 @@ func coalesceClusters(clstrs []Cluster) []Cluster {
 	clstrs = SortAllClusters(clstrs, VarSort)
 
 	var (
-		numClstrs  = len(clstrs)
-		maxIJ      int
-		comparison int
+		numClstrs  = len(clstrs) // Number of clusters
+		numPntsI   int           // Number of points in cluster i
+		comparison int           // Comparison result
 	)
-
 	for i := 0; i < numClstrs; i++ {
-		maxIJ = len(clstrs[i])
-		for j := 0; j < maxIJ; j++ {
-			if j+1 < maxIJ && ComparePoints(clstrs[i][j], clstrs[i][j+1]) == 0 {
+		numPntsI = len(clstrs[i])
+		for j := 0; j < numPntsI; j++ {
+			if j+1 < numPntsI && ComparePoints(clstrs[i][j], clstrs[i][j+1]) == 0 {
+				// Points j and j+1 are equal, so keep iterating until the last equal point is found.
 				continue
 			}
 
@@ -260,8 +338,8 @@ func coalesceClusters(clstrs []Cluster) []Cluster {
 	return clstrs
 }
 
-// randPnt returns a random point in the space spanned by the maximum point on a set of points. Each dimension is a random value on (-r,r) where r is the maximum value in each dimension on the set of points. It does NOT return a point in the set.
-func randPnt(pnts []Point) Point {
+// randomPoint returns a random point in the space spanned by the maximum point on a set of points. Each dimension is a random value on (-r,r) where r is the maximum value in each dimension on the set of points. It does NOT return a point in the set.
+func randomPoint(pnts []Point) Point {
 	seed()
 	pnt := maxPoint(pnts)
 	for i := range pnt {
@@ -296,14 +374,11 @@ func maxPoint(pnts []Point) Point {
 // shufflePoints randomly orders a set of points.
 func shufflePoints(pnts []Point) []Point {
 	seed()
-	rand.Shuffle(
-		len(pnts),
-		func(i, j int) {
-			temp := pnts[i]
-			pnts[i] = pnts[j]
-			pnts[j] = temp
-		},
-	)
+	rand.Shuffle(len(pnts), func(i, j int) {
+		temp := pnts[i]
+		pnts[i] = pnts[j]
+		pnts[j] = temp
+	})
 
 	return pnts
 }
@@ -331,19 +406,15 @@ func Means(clstrs []Cluster) []Point {
 // Mean returns a point representing the mean (center) of the cluster.
 func Mean(clstr Cluster) Point {
 	n := float64(len(clstr))
-	if n == 0 {
+	switch n {
+	case 0:
 		return nil
+	case 1:
+		return copyPoint(clstr[0])
 	}
 
 	d := len(clstr[0])
-	var mn Point
-	if n == 1 {
-		mn = make(Point, d)
-		copy(mn, clstr[0])
-		return mn
-	}
-
-	mn = make(Point, d)
+	mn := make(Point, d)
 	for i := range clstr {
 		for j := range clstr[i] {
 			mn[j] += clstr[i][j]
@@ -489,4 +560,41 @@ func CompareClusters(clstr0, clstr1 Cluster) int {
 	}
 
 	return 0 // Points are equal in length and in each value
+}
+
+// copyPoint returns a copy of a point.
+func copyPoint(pnt Point) Point {
+	cpy := make(Point, len(pnt))
+	copy(cpy, pnt)
+	return cpy
+}
+
+// copyPoints returns a copy of a set of points.
+func copyPoints(pnts []Point) []Point {
+	cpy := make([]Point, 0, len(pnts))
+	for i := range pnts {
+		cpy = append(cpy, copyPoint(pnts[i]))
+	}
+
+	return cpy
+}
+
+// copyCluster returns a copy of a cluster.
+func copyCluster(clstr Cluster) Cluster {
+	cpy := make(Cluster, 0, len(clstr))
+	for i := range clstr {
+		cpy = append(cpy, copyPoint(clstr[i]))
+	}
+
+	return cpy // Cluster(copyPoints([]Point(clstr)))
+}
+
+// copyClusters returns a copy of a set of clusters.
+func copyClusters(clstrs []Cluster) []Cluster {
+	cpy := make([]Cluster, 0, len(clstrs))
+	for i := range clstrs {
+		cpy = append(cpy, copyCluster(clstrs[i]))
+	}
+
+	return cpy
 }

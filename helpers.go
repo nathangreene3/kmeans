@@ -54,3 +54,10 @@ func min(m, n int) int {
 
 	return n
 }
+
+// copyFloat64s returns a copy of a []float64.
+func copyFloat64s(s []float64) []float64 {
+	cpy := make([]float64, len(s))
+	copy(cpy, s)
+	return cpy
+}
