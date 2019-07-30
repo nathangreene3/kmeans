@@ -9,22 +9,24 @@ import (
 )
 
 func main() {
-	test7()
+
 }
 
 func test0() {
-	pnts := []Point{
-		Point{4, 3},
+	pnts := Points{
 		Point{1, 1},
-		Point{3, 3},
 		Point{2, 1},
+		Point{3, 3},
 		Point{4, 2},
+		Point{4, 3},
 	}
 
-	n := len(pnts)
-	variances := make([]float64, 0, n)
-	var v float64
-	var clstrs []Cluster
+	var (
+		n      = len(pnts)
+		vars   = make([]float64, 0, n)
+		v      float64
+		clstrs Clusters
+	)
 	for k := 1; k <= n; k++ {
 		fmt.Printf("k = %d\n", k)
 		clstrs = KMeans(k, pnts, false)
@@ -39,15 +41,15 @@ func test0() {
 			v += Variance(clstrs[i])
 		}
 
-		variances = append(variances, v/float64(k))
+		vars = append(vars, v/float64(k))
 	}
 
-	fmt.Println(asciigraph.Plot(variances))
-	fmt.Printf("variances: %0.2f\n", variances)
+	fmt.Println(asciigraph.Plot(vars))
+	fmt.Printf("variances: %0.2f\n", vars)
 }
 
 func test1() {
-	pnts := []Point{
+	pnts := Points{
 		Point{4, 3},
 		Point{1, 1},
 		Point{3, 3},
@@ -63,7 +65,7 @@ func test1() {
 }
 
 func test2() {
-	pnts := []Point{
+	pnts := Points{
 		Point{5},
 		Point{5},
 	}
@@ -73,7 +75,7 @@ func test2() {
 }
 
 func test3() {
-	pnts := []Point{
+	pnts := Points{
 		Point{2, 1}, // (0.50, 0.33)
 		Point{4, 3}, // (1.00, 1.00)
 		Point{4, 2}, // (1.00, 0.67)
@@ -84,7 +86,7 @@ func test3() {
 	n := len(pnts)
 	variances := make([]float64, 0, n)
 	var v float64
-	var clstrs []Cluster
+	var clstrs Clusters
 	for k := 1; k <= n; k++ {
 		fmt.Printf("k = %d\n", k)
 		clstrs = KMeans(k, pnts, true)
@@ -107,7 +109,7 @@ func test3() {
 }
 
 func test4() {
-	pnts := []Point{
+	pnts := Points{
 		Point{5, 10},
 		Point{5, 10},
 		Point{5, 10},
@@ -118,7 +120,7 @@ func test4() {
 	n := len(pnts)
 	variances := make([]float64, 0, n)
 	var v float64
-	var clstrs []Cluster
+	var clstrs Clusters
 	for k := 1; k <= n; k++ {
 		fmt.Printf("k = %d\n", k)
 		clstrs = KMeans(k, pnts, false)
@@ -142,8 +144,8 @@ func test4() {
 
 func test5() {
 	// species := []string{"setosa", "versicolor", "virginica"}
-	species := map[string][]Point{
-		"setosa": []Point(SortCluster(Cluster([]Point{
+	species := map[string]Points{
+		"setosa": Points(SortCluster(Cluster(Points{
 			Point{5.1, 3.5, 1.4, 0.2},
 			Point{4.9, 3.0, 1.4, 0.2},
 			Point{4.7, 3.2, 1.3, 0.2},
@@ -195,7 +197,7 @@ func test5() {
 			Point{5.3, 3.7, 1.5, 0.2},
 			Point{5.0, 3.3, 1.4, 0.2},
 		}), LexiSort)),
-		"versicolor": []Point(SortCluster(Cluster([]Point{
+		"versicolor": Points(SortCluster(Cluster(Points{
 			Point{7.0, 3.2, 4.7, 1.4},
 			Point{6.4, 3.2, 4.5, 1.5},
 			Point{6.9, 3.1, 4.9, 1.5},
@@ -247,7 +249,7 @@ func test5() {
 			Point{5.1, 2.5, 3.0, 1.1},
 			Point{5.7, 2.8, 4.1, 1.3},
 		}), LexiSort)),
-		"virginica": []Point(SortCluster(Cluster([]Point{
+		"virginica": Points(SortCluster(Cluster(Points{
 			Point{6.3, 3.3, 6.0, 2.5},
 			Point{5.8, 2.7, 5.1, 1.9},
 			Point{7.1, 3.0, 5.9, 2.1},
@@ -305,7 +307,7 @@ func test5() {
 	numVersicolor := len(species["versicolor"])
 	numVirginica := len(species["virginica"])
 	n := numSetosa + numVersicolor + numVirginica
-	pnts := make([]Point, 0, n)
+	pnts := make(Points, 0, n)
 	for i := range species["setosa"] {
 		pnts = append(pnts, species["setosa"][i])
 	}
@@ -343,8 +345,8 @@ func test5() {
 
 func test6() {
 	// species := []string{"setosa", "versicolor", "virginica"}
-	species := map[string][]Point{
-		"setosa": []Point(SortCluster(Cluster([]Point{
+	species := map[string]Points{
+		"setosa": Points(SortCluster(Cluster(Points{
 			Point{5.1, 3.5, 1.4, 0.2},
 			Point{4.9, 3.0, 1.4, 0.2},
 			Point{4.7, 3.2, 1.3, 0.2},
@@ -396,7 +398,7 @@ func test6() {
 			Point{5.3, 3.7, 1.5, 0.2},
 			Point{5.0, 3.3, 1.4, 0.2},
 		}), LexiSort)),
-		"versicolor": []Point(SortCluster(Cluster([]Point{
+		"versicolor": Points(SortCluster(Cluster(Points{
 			Point{7.0, 3.2, 4.7, 1.4},
 			Point{6.4, 3.2, 4.5, 1.5},
 			Point{6.9, 3.1, 4.9, 1.5},
@@ -448,7 +450,7 @@ func test6() {
 			Point{5.1, 2.5, 3.0, 1.1},
 			Point{5.7, 2.8, 4.1, 1.3},
 		}), LexiSort)),
-		"virginica": []Point(SortCluster(Cluster([]Point{
+		"virginica": Points(SortCluster(Cluster(Points{
 			Point{6.3, 3.3, 6.0, 2.5},
 			Point{5.8, 2.7, 5.1, 1.9},
 			Point{7.1, 3.0, 5.9, 2.1},
@@ -506,7 +508,7 @@ func test6() {
 	numVersicolor := len(species["versicolor"])
 	numVirginica := len(species["virginica"])
 	n := numSetosa + numVersicolor + numVirginica
-	pnts := make([]Point, 0, n)
+	pnts := make(Points, 0, n)
 	for i := range species["setosa"] {
 		pnts = append(pnts, species["setosa"][i])
 	}
@@ -548,8 +550,8 @@ func test6() {
 
 func test7() {
 	// species := []string{"setosa", "versicolor", "virginica"}
-	species := map[string][]Point{
-		"setosa": []Point(SortCluster(Cluster([]Point{
+	species := map[string]Points{
+		"setosa": Points(SortCluster(Cluster(Points{
 			Point{5.1, 3.5, 1.4, 0.2},
 			Point{4.9, 3.0, 1.4, 0.2},
 			Point{4.7, 3.2, 1.3, 0.2},
@@ -601,7 +603,7 @@ func test7() {
 			Point{5.3, 3.7, 1.5, 0.2},
 			Point{5.0, 3.3, 1.4, 0.2},
 		}), LexiSort)),
-		"versicolor": []Point(SortCluster(Cluster([]Point{
+		"versicolor": Points(SortCluster(Cluster(Points{
 			Point{7.0, 3.2, 4.7, 1.4},
 			Point{6.4, 3.2, 4.5, 1.5},
 			Point{6.9, 3.1, 4.9, 1.5},
@@ -653,7 +655,7 @@ func test7() {
 			Point{5.1, 2.5, 3.0, 1.1},
 			Point{5.7, 2.8, 4.1, 1.3},
 		}), LexiSort)),
-		"virginica": []Point(SortCluster(Cluster([]Point{
+		"virginica": Points(SortCluster(Cluster(Points{
 			Point{6.3, 3.3, 6.0, 2.5},
 			Point{5.8, 2.7, 5.1, 1.9},
 			Point{7.1, 3.0, 5.9, 2.1},
@@ -711,7 +713,7 @@ func test7() {
 	numVersicolor := len(species["versicolor"])
 	numVirginica := len(species["virginica"])
 	n := numSetosa + numVersicolor + numVirginica
-	pnts := make([]Point, 0, n)
+	pnts := make(Points, 0, n)
 
 	for i := range species["setosa"] {
 		pnts = append(pnts, species["setosa"][i])
@@ -725,10 +727,10 @@ func test7() {
 		pnts = append(pnts, species["virginica"][i])
 	}
 
-	mdl := NewModel(3, pnts, false)
+	mdl := New(3, pnts, false)
 	var correct float64
 	for i := range pnts {
-		switch mdl.AssignPoint(pnts[i]) {
+		switch mdl.Assign(pnts[i]) {
 		case 0:
 			if sort.Search(numSetosa, func(j int) bool { return ComparePoints(pnts[i], species["setosa"][j]) <= 0 }) < numSetosa {
 				correct++
