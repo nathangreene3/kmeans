@@ -16,21 +16,16 @@ type Model struct {
 
 // New returns a trained k-means model.
 func New(k int, ps Points, normalize bool) *Model {
-	mdl := &Model{
-		k:          k,
-		maxPoint:   ps.MaxRep(),
-		normalized: normalize,
-	}
-
-	for i := 0; i < 3; i++ {
-		mdl.KMeans(ps)
+	mdl := &Model{}
+	for i := 0; i < 5; i++ {
+		mdl.Train(k, ps, normalize)
 	}
 
 	return mdl
 }
 
-// Assign a point to a cluster.
-func (mdl *Model) Assign(pnt Point) int {
+// Assignment returns the index of the cluster a point belongs to.
+func (mdl *Model) Assignment(pnt Point) int {
 	var (
 		assignment int
 		sd         float64
@@ -84,14 +79,20 @@ func (mdl *Model) MaxRepPoint() Point {
 	return mdl.maxPoint.Copy()
 }
 
-// Normalized returns true if the model was normalized and false if otherwise.
-func (mdl *Model) Normalized() bool {
+// IsNormed returns true if the model was normalized and false if otherwise.
+func (mdl *Model) IsNormed() bool {
 	return mdl.normalized
 }
 
-// Sort each cluster in a model.
-func (mdl *Model) Sort(st SortOpt) {
+// sortAll each cluster in a model.
+func (mdl *Model) sortAll(st SortOpt) {
 	mdl.clusters.SortAll(st)
+}
+
+// sort clusters.
+func (mdl *Model) sort() {
+	mdl.clusters.Sort()
+	mdl.update()
 }
 
 // KMeans clusters a set of points into k groups. Potentially, clusters can be empty, so multiple attempts should be made.
@@ -141,7 +142,7 @@ func KMeans(k int, pnts Points, normalize bool) Clusters {
 				}
 
 				// Move point i in cluster h to the nearest cluster and update sizes and changed.
-				clusters[minIndex], clusters[h] = transfer(i, clusters[minIndex], clusters[h])
+				clusters[minIndex], clusters[h] = Transfer(i, clusters[minIndex], clusters[h])
 				changed = true
 			}
 		}
@@ -150,26 +151,25 @@ func KMeans(k int, pnts Points, normalize bool) Clusters {
 	return clusters
 }
 
-// KMeans clusters a set of points into k groups. Potentially, clusters can be empty, so multiple attempts should be made.
-// TODO: FIX PANIC.
-func (mdl *Model) KMeans(pnts Points) {
+// Train clusters a set of points into k groups. Potentially, clusters can be empty, so multiple attempts should be made.
+func (mdl *Model) Train(k int, ps Points, normalize bool) {
+	mdl.initialize(k, ps, normalize)
+
 	// Move points to their nearest cluster until they no longer move with each pass (indicated by the changed boolean).
 	var (
 		changed   = true  // Indicates if a cluster was altered
-		means     Points  // Means of clusters
 		minIndex  int     // Index of cluster having smallest squared distance to a point
 		sd, minSD float64 // Squared distance; minimum squared distance
 	)
-	mdl.clusters = initClusters(mdl.k, pnts, mdl.normalized) // Clusters to return
+
 	for changed {
 		changed = false
 
-		// Update the means. If any cluster is empty, its mean, which is nil, will be reassigned to be a random point on the space spanned by the maximum point.
-		mdl.means = mdl.clusters.Means()
-		mdl.variances = mdl.clusters.Variances()
-		for i := range means {
-			if means[i] == nil {
-				pnts.random()
+		// Update the means and variances. If any cluster is empty, its mean, which is nil, will be reassigned to be a random point on the space spanned by the maximum point.
+		mdl.update()
+		for i := range mdl.means {
+			if mdl.means[i] == nil {
+				ps.Random()
 			}
 		}
 
@@ -178,14 +178,14 @@ func (mdl *Model) KMeans(pnts Points) {
 			for i := 0; i < len(mdl.clusters[h]); i++ {
 				// Find the index of the cluster closest to point i in cluster h.
 				minIndex = h
-				minSD = SquaredDistance(means[h], mdl.clusters[h][i])
+				minSD = mdl.means[h].SqDist(mdl.clusters[h][i])
 				for j := range mdl.clusters {
 					if h == j {
 						// If h = j, then we are comparing the same cluster. If the size of cluster j is zero, then, obviously, there's no points to compare.
 						continue
 					}
 
-					sd = SquaredDistance(means[j], mdl.clusters[h][i])
+					sd = mdl.means[j].SqDist(mdl.clusters[h][i])
 					if sd < minSD {
 						minSD = sd
 						minIndex = j
@@ -198,11 +198,53 @@ func (mdl *Model) KMeans(pnts Points) {
 				}
 
 				// Move point i in cluster h to the nearest cluster and update sizes and changed.
-				mdl.clusters[minIndex], mdl.clusters[h] = transfer(i, mdl.clusters[minIndex], mdl.clusters[h])
+				mdl.clusters[minIndex], mdl.clusters[h] = Transfer(i, mdl.clusters[minIndex], mdl.clusters[h])
 				changed = true
 			}
 		}
 	}
+}
+
+// initClusters returns a set of k-sorted clusters.
+func (mdl *Model) initialize(k int, ps Points, normalize bool) {
+	ps.validate()
+	ps.Shuffle()
+	if normalize {
+		ps.Normalize()
+	}
+
+	mdl.k = k
+	mdl.clusters = make(Clusters, 0, k)
+
+	// Each cluster contains capacity/k points. Remainders will be added to the last cluster (index k-1).
+	var (
+		capacity = len(ps)      // Cluster capacity
+		length   = capacity / k // Cluster length, not including remainder
+		h        int            // Indexer through points
+	)
+	for i := 0; i < k; i++ {
+		c := make(Cluster, 0, capacity)
+		for j := 0; j < length; j++ {
+			c = append(c, ps[h])
+			h++
+		}
+
+		mdl.clusters = append(mdl.clusters, c)
+	}
+
+	// The last cluster is potentially largest if k doesn't divide n evenly. The actual size is s + n mod k. For example, given 32 points on 5 clusters, the size would be 32/5 + 32 mod 5 = 8.
+	for ; h < capacity; h++ {
+		mdl.clusters[k-1] = append(mdl.clusters[k-1], ps[h])
+	}
+
+	mdl.clusters.Coalesce() // Sorts all
+	mdl.update()
+}
+
+// update the means and variances.
+func (mdl *Model) update() {
+	mdl.means = mdl.clusters.Means()
+	mdl.variances = mdl.clusters.Variances()
 }
 
 // OptimalKMeans determines (attempts to anyway...) the optimal number of clusters and returns the clustering result.

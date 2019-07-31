@@ -42,16 +42,16 @@ func TestKMeans(t *testing.T) {
 
 func TestModel(t *testing.T) {
 	tests := []struct {
-		k         int
-		normalize bool
-		pnts      Points
-		expClstrs Clusters
+		k                int
+		normalize        bool
+		pnts             Points
+		expectedClusters Clusters
 	}{
 		{
 			k:         2,
 			normalize: false,
 			pnts:      Points{Point{1, 1}, Point{2, 1}, Point{3, 3}, Point{4, 2}, Point{4, 3}},
-			expClstrs: Clusters{
+			expectedClusters: Clusters{
 				Cluster{Point{1, 1}, Point{2, 1}},
 				Cluster{Point{3, 3}, Point{4, 2}, Point{4, 3}},
 			},
@@ -60,17 +60,17 @@ func TestModel(t *testing.T) {
 
 	for _, test := range tests {
 		mdl := New(test.k, test.pnts, test.normalize)
-		for h := range test.expClstrs {
-			sort.SliceStable(test.expClstrs[h], func(i, j int) bool { return ComparePoints(test.expClstrs[h][i], test.expClstrs[h][j]) < 0 })
-		}
+		mdl.clusters.Sort()
+		mdl.sortAll(LexiSort)
 
-		for h := range mdl.clusters {
-			sort.SliceStable(mdl.clusters[h], func(i, j int) bool { return ComparePoints(mdl.clusters[h][i], mdl.clusters[h][j]) < 0 })
+		sort.SliceStable(test.expectedClusters, func(i, j int) bool { return test.expectedClusters[i].CompareTo(test.expectedClusters[j]) < 0 })
+		for h := range test.expectedClusters {
+			sort.SliceStable(test.expectedClusters[h], func(i, j int) bool { return test.expectedClusters[h][i].CompareTo(test.expectedClusters[h][j]) < 0 })
 		}
 
 		for i := range mdl.clusters {
-			if CompareClusters(test.expClstrs[i], mdl.clusters[i]) != 0 {
-				t.Fatalf("KMeans failed.\nExpected: %0.2f\nReceived: %0.2f\nMeans: %0.2f\n", test.expClstrs, mdl.clusters, Means(mdl.clusters))
+			if test.expectedClusters[i].CompareTo(mdl.clusters[i]) != 0 {
+				t.Fatalf("KMeans failed.\nExpected: %0.2f\nReceived: %0.2f\nMeans: %0.2f\n", test.expectedClusters, mdl.clusters, mdl.clusters.Means())
 			}
 		}
 	}

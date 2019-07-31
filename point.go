@@ -3,6 +3,7 @@ package main
 import (
 	"math"
 	"math/rand"
+	"sort"
 )
 
 // Point is an n-dimensional point in n-space.
@@ -10,6 +11,22 @@ type Point []float64
 
 // Points is a set of points.
 type Points []Point
+
+// SqDist returns the squared distance between two points.
+func (p Point) SqDist(pnt Point) float64 {
+	var sd, d float64 // Squared distance, Difference in each dimension
+	for i := range p {
+		d = p[i] - pnt[i]
+		sd += d * d
+	}
+
+	return sd
+}
+
+// Dist returns the Euclidean Dist between two points.
+func (p Point) Dist(pnt Point) float64 {
+	return math.Sqrt(p.SqDist(pnt))
+}
 
 // AssignPoint returns the index of the closest cluster mean to a given point.
 func AssignPoint(pnt Point, mns Points) int {
@@ -156,8 +173,8 @@ func randomPoint(pnts Points) Point {
 	return pnt
 }
 
-// randomPoint returns a random point in the space spanned by the maximum point on a set of points. Each dimension is a random value on (-r,r) where r is the maximum value in each dimension on the set of points. It does NOT return a point in the set.
-func (ps Points) random() Point {
+// Random returns a Random point in the space spanned by the maximum point on a set of points. Each dimension is a Random value on (-r,r) where r is the maximum value in each dimension on the set of points. It does NOT return a point in the set.
+func (ps Points) Random() Point {
 	seed()
 	maxPnt := ps.MaxRep()
 	for i := range maxPnt {
@@ -228,8 +245,8 @@ func shufflePoints(pnts Points) Points {
 	return pnts
 }
 
-// shuffle randomly orders a set of points.
-func (ps Points) shuffle() {
+// Shuffle randomly orders a set of points.
+func (ps Points) Shuffle() {
 	seed()
 	rand.Shuffle(len(ps), func(i, j int) { ps[i], ps[j] = ps[j], ps[i] })
 }
@@ -301,4 +318,16 @@ func (ps Points) Copy() Points {
 	}
 
 	return cpy
+}
+
+// Sort a set of points given a sort option.
+func (ps Points) Sort() {
+	sort.Slice(ps, func(i, j int) bool { return ps[i].CompareTo(ps[j]) < 0 })
+}
+
+// ToCluster returns a cluster converted from a set of points.
+func (ps Points) ToCluster() Cluster {
+	c := make(Cluster, len(ps))
+	copy(c, ps)
+	return c
 }

@@ -11,7 +11,7 @@ type Clusters []Cluster
 // initClusters returns a set of k-sorted clusters.
 func initClusters(k int, ps Points, normalize bool) Clusters {
 	ps.validate()
-	ps.shuffle()
+	ps.Shuffle()
 	if normalize {
 		ps.Normalize()
 	}
@@ -38,7 +38,7 @@ func initClusters(k int, ps Points, normalize bool) Clusters {
 		clusters[k-1] = append(clusters[k-1], ps[h])
 	}
 
-	clusters.coalesce() // Sorts all
+	clusters.Coalesce() // Sorts all
 	return clusters
 }
 
@@ -237,7 +237,7 @@ func (c Cluster) Sort(st SortOpt) {
 	switch st {
 	case VarSort:
 		if mn := c.Mean(); mn != nil {
-			sort.SliceStable(c, func(i, j int) bool { return SquaredDistance(mn, c[i]) < SquaredDistance(mn, c[j]) })
+			sort.SliceStable(c, func(i, j int) bool { return mn.SqDist(c[i]) < mn.SqDist(c[j]) })
 		}
 	case LexiSort:
 		sort.SliceStable(c, func(i, j int) bool { return c[i].CompareTo(c[j]) < 0 })
@@ -405,7 +405,7 @@ func coalesceClusters(clstrs Clusters) Clusters {
 				for b := 0; b < len(clstrs[k]); b++ {
 					comparison = ComparePoints(clstrs[i][j], clstrs[k][b])
 					if comparison == 0 {
-						clstrs[i], clstrs[k] = transfer(b, clstrs[i], clstrs[k])
+						clstrs[i], clstrs[k] = Transfer(b, clstrs[i], clstrs[k])
 						continue
 					}
 
@@ -422,8 +422,8 @@ func coalesceClusters(clstrs Clusters) Clusters {
 	return clstrs
 }
 
-// coalesce ensures clusters containing equivalent points are placed in one cluster. For each cluster i, the points in each cluster j are compared and equivalent points are moved to cluster i.
-func (cs Clusters) coalesce() {
+// Coalesce ensures clusters containing equivalent points are placed in one cluster. For each cluster i, the points in each cluster j are compared and equivalent points are moved to cluster i.
+func (cs Clusters) Coalesce() {
 	cs.SortAll(VarSort)
 
 	var (
@@ -442,7 +442,7 @@ func (cs Clusters) coalesce() {
 			for k := i + 1; k < numClstrs; k++ {
 				for b := 0; b < len(cs[k]); b++ {
 					if comparison = cs[i][j].CompareTo(cs[k][b]); comparison == 0 {
-						cs[i], cs[k] = transfer(b, cs[i], cs[k])
+						cs[i], cs[k] = Transfer(b, cs[i], cs[k])
 						continue
 					}
 
@@ -472,24 +472,33 @@ func joinClusters(clstrs Clusters) Cluster {
 	return SortCluster(clstr, VarSort)
 }
 
-// join into a single, sorted cluster (sorted on variance).
-func (cs Clusters) join() Cluster {
-	var n int
+// Join into a single, sorted cluster (sorted on variance).
+func (cs Clusters) Join() Cluster {
+	var i, n int
 	for i := range cs {
 		n += len(cs[i])
 	}
 
-	c := make(Cluster, 0, n)
-	for i := range cs {
-		c = append(c, cs[i]...)
+	c := make(Cluster, n)
+	for _, cluster := range cs {
+		n = len(cluster)
+		copy(c[i:i+n], cluster)
+		i += n
 	}
 
 	c.Sort(VarSort)
 	return c
 }
 
-// transfer ith point from the source cluster to the destination cluster. Returns (dest, src).
-func transfer(i int, dest, src Cluster) (Cluster, Cluster) {
+// ToPoints returns a set of points from a cluster.
+func (c Cluster) ToPoints() Points {
+	ps := make(Points, len(c))
+	copy(ps, c)
+	return ps
+}
+
+// Transfer ith point from the source cluster to the destination cluster. Returns (dest, src).
+func Transfer(i int, dest, src Cluster) (Cluster, Cluster) {
 	dest = append(dest, src[i])
 	dest.Sort(VarSort)
 	if i+1 < len(src) {

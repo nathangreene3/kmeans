@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-
+	test7()
 }
 
 func test0() {
@@ -549,9 +549,8 @@ func test6() {
 }
 
 func test7() {
-	// species := []string{"setosa", "versicolor", "virginica"}
 	species := map[string]Points{
-		"setosa": Points(SortCluster(Cluster(Points{
+		"setosa": Points{
 			Point{5.1, 3.5, 1.4, 0.2},
 			Point{4.9, 3.0, 1.4, 0.2},
 			Point{4.7, 3.2, 1.3, 0.2},
@@ -602,8 +601,8 @@ func test7() {
 			Point{4.6, 3.2, 1.4, 0.2},
 			Point{5.3, 3.7, 1.5, 0.2},
 			Point{5.0, 3.3, 1.4, 0.2},
-		}), LexiSort)),
-		"versicolor": Points(SortCluster(Cluster(Points{
+		},
+		"versicolor": Points{
 			Point{7.0, 3.2, 4.7, 1.4},
 			Point{6.4, 3.2, 4.5, 1.5},
 			Point{6.9, 3.1, 4.9, 1.5},
@@ -654,8 +653,8 @@ func test7() {
 			Point{6.2, 2.9, 4.3, 1.3},
 			Point{5.1, 2.5, 3.0, 1.1},
 			Point{5.7, 2.8, 4.1, 1.3},
-		}), LexiSort)),
-		"virginica": Points(SortCluster(Cluster(Points{
+		},
+		"virginica": Points{
 			Point{6.3, 3.3, 6.0, 2.5},
 			Point{5.8, 2.7, 5.1, 1.9},
 			Point{7.1, 3.0, 5.9, 2.1},
@@ -706,45 +705,63 @@ func test7() {
 			Point{6.5, 3.0, 5.2, 2.0},
 			Point{6.2, 3.4, 5.4, 2.3},
 			Point{5.9, 3.0, 5.1, 1.8},
-		}), LexiSort)),
+		},
 	}
 
-	numSetosa := len(species["setosa"])
-	numVersicolor := len(species["versicolor"])
-	numVirginica := len(species["virginica"])
-	n := numSetosa + numVersicolor + numVirginica
-	pnts := make(Points, 0, n)
-
-	for i := range species["setosa"] {
-		pnts = append(pnts, species["setosa"][i])
+	// Sort so species can be searched.
+	for s := range species {
+		species[s].Sort()
 	}
 
-	for i := range species["versicolor"] {
-		pnts = append(pnts, species["versicolor"][i])
+	var (
+		numSetosa     = len(species["setosa"])
+		numVersicolor = len(species["versicolor"])
+		numVirginica  = len(species["virginica"])
+		numPnts       = numSetosa + numVersicolor + numVirginica
+		pnts          = make(Points, 0, numPnts)
+	)
+
+	for _, s := range species {
+		for _, p := range s {
+			pnts = append(pnts, p)
+		}
 	}
 
-	for i := range species["virginica"] {
-		pnts = append(pnts, species["virginica"][i])
+	var (
+		mdl         = New(len(species), pnts, false)
+		assignments = map[string]int{
+			"setosa":     mdl.Assignment(species["setosa"].ToCluster().Mean()),
+			"versicolor": mdl.Assignment(species["versicolor"].ToCluster().Mean()),
+			"virginica":  mdl.Assignment(species["virginica"].ToCluster().Mean()),
+		}
+	)
+
+	// Check that assignments are distinct.
+	for k0, v0 := range assignments {
+		for k1, v1 := range assignments {
+			if k0 != k1 && v0 == v1 {
+				log.Fatal("failed to categorize means")
+			}
+		}
 	}
 
-	mdl := New(3, pnts, false)
 	var correct float64
-	for i := range pnts {
-		switch mdl.Assign(pnts[i]) {
-		case 0:
-			if sort.Search(numSetosa, func(j int) bool { return ComparePoints(pnts[i], species["setosa"][j]) <= 0 }) < numSetosa {
+	for _, p := range pnts {
+		switch mdl.Assignment(p) {
+		case assignments["setosa"]:
+			if sort.Search(numSetosa, func(j int) bool { return p.CompareTo(species["setosa"][j]) <= 0 }) < numSetosa {
 				correct++
 			}
-		case 1:
-			if sort.Search(numVersicolor, func(j int) bool { return ComparePoints(pnts[i], species["versicolor"][j]) <= 0 }) < numVersicolor {
+		case assignments["versicolor"]:
+			if sort.Search(numVersicolor, func(j int) bool { return p.CompareTo(species["versicolor"][j]) <= 0 }) < numVersicolor {
 				correct++
 			}
-		case 2:
-			if sort.Search(numVirginica, func(j int) bool { return ComparePoints(pnts[i], species["virginica"][j]) <= 0 }) < numVirginica {
+		case assignments["virginica"]:
+			if sort.Search(numVirginica, func(j int) bool { return p.CompareTo(species["virginica"][j]) <= 0 }) < numVirginica {
 				correct++
 			}
 		}
 	}
 
-	fmt.Printf("%0.2f%%\n", 100.0*correct/float64(n))
+	fmt.Printf("%0.2f%%\n", 100.0*correct/float64(numPnts))
 }
