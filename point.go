@@ -164,7 +164,7 @@ func (ps Points) Normalize() {
 
 // randomPoint returns a random point in the space spanned by the maximum point on a set of points. Each dimension is a random value on (-r,r) where r is the maximum value in each dimension on the set of points. It does NOT return a point in the set.
 func randomPoint(pnts Points) Point {
-	seed()
+	seedRNG()
 	pnt := pnts.MaxRep()
 	for i := range pnt {
 		pnt[i] *= 2*rand.Float64() - 1
@@ -175,7 +175,7 @@ func randomPoint(pnts Points) Point {
 
 // Random returns a Random point in the space spanned by the maximum point on a set of points. Each dimension is a Random value on (-r,r) where r is the maximum value in each dimension on the set of points. It does NOT return a point in the set.
 func (ps Points) Random() Point {
-	seed()
+	seedRNG()
 	maxPnt := ps.MaxRep()
 	for i := range maxPnt {
 		maxPnt[i] *= 2*rand.Float64() - 1
@@ -235,7 +235,7 @@ func (ps Points) MaxRep() Point {
 
 // shufflePoints randomly orders a set of points.
 func shufflePoints(pnts Points) Points {
-	seed()
+	seedRNG()
 	rand.Shuffle(len(pnts), func(i, j int) {
 		temp := pnts[i]
 		pnts[i] = pnts[j]
@@ -247,7 +247,7 @@ func shufflePoints(pnts Points) Points {
 
 // Shuffle randomly orders a set of points.
 func (ps Points) Shuffle() {
-	seed()
+	seedRNG()
 	rand.Shuffle(len(ps), func(i, j int) { ps[i], ps[j] = ps[j], ps[i] })
 }
 

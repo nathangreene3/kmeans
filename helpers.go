@@ -5,13 +5,18 @@ import (
 	"time"
 )
 
-// seeded indicates if the random number generator has been seeded.
-var seeded bool
+var (
+	// seeded indicates if the random number generator has been seeded.
+	seeded bool
+	// seed is the seed used to seed the random number generator.
+	seed int64
+)
 
-// seed the random number generator.
-func seed() {
+// seedRNG the random number generator.
+func seedRNG() {
 	if !seeded {
-		rand.Seed(int64(time.Now().Nanosecond()))
+		seed = int64(time.Now().Nanosecond())
+		rand.Seed(seed)
 		seeded = true
 	}
 }
@@ -57,11 +62,4 @@ func min(m, n int) int {
 	}
 
 	return n
-}
-
-// copyFloat64s returns a copy of a []float64.
-func copyFloat64s(s []float64) []float64 {
-	cpy := make([]float64, len(s))
-	copy(cpy, s)
-	return cpy
 }
