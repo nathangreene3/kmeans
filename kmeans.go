@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"math"
+
+	"github.com/guptarohit/asciigraph"
 )
 
 // Model holds k-means clusters and their meta data.
@@ -16,11 +19,21 @@ type Model struct {
 
 // New returns a trained k-means model.
 func New(k int, ps Points, normalize bool) *Model {
-	mdl := &Model{}
+	var (
+		mdl         = &Model{}
+		minVariance = math.MaxFloat64
+		minClusters Clusters
+	)
+
 	for i := 0; i < 5; i++ {
 		mdl.Train(k, ps, normalize)
+		if mdl.MeanWeightedVariance() < minVariance {
+			minClusters = mdl.clusters
+		}
 	}
 
+	mdl.clusters = minClusters
+	mdl.update()
 	return mdl
 }
 
@@ -52,6 +65,52 @@ func (mdl *Model) K() int {
 	return mdl.k
 }
 
+// initClusters returns a set of k-sorted clusters.
+func (mdl *Model) initialize(k int, ps Points, normalize bool) {
+	ps.validate()
+	ps.Shuffle()
+	if normalize {
+		ps.Normalize()
+	}
+
+	mdl.k = k
+	mdl.clusters = make(Clusters, 0, k)
+
+	// Each cluster contains capacity/k points. Remainders will be added to the last cluster (index k-1).
+	var (
+		capacity = len(ps)      // Cluster capacity
+		length   = capacity / k // Cluster length, not including remainder
+		h        int            // Indexer through points
+	)
+	for i := 0; i < k; i++ {
+		c := make(Cluster, 0, capacity)
+		for j := 0; j < length; j++ {
+			c = append(c, ps[h])
+			h++
+		}
+
+		mdl.clusters = append(mdl.clusters, c)
+	}
+
+	// The last cluster is potentially largest if k doesn't divide n evenly. The actual size is s + n mod k. For example, given 32 points on 5 clusters, the size would be 32/5 + 32 mod 5 = 8.
+	for ; h < capacity; h++ {
+		mdl.clusters[k-1] = append(mdl.clusters[k-1], ps[h])
+	}
+
+	mdl.clusters.Coalesce() // Sorts all
+	mdl.update()
+}
+
+// IsNormed returns true if the model was normalized and false if otherwise.
+func (mdl *Model) IsNormed() bool {
+	return mdl.normalized
+}
+
+// MaxRepPoint returns the max representing point.
+func (mdl *Model) MaxRepPoint() Point {
+	return mdl.maxPoint.Copy()
+}
+
 // Mean returns the Mean of cluster i.
 func (mdl *Model) Mean(i int) Point {
 	return mdl.means[i].Copy()
@@ -62,31 +121,26 @@ func (mdl *Model) Means() Points {
 	return mdl.means.Copy()
 }
 
-// Variance returns the variance of cluster i.
-func (mdl *Model) Variance(i int) float64 {
-	return mdl.variances[i]
+// MeanWeightedVariance returns the mean of the variances weighted by the number of points in each cluster.
+func (mdl *Model) MeanWeightedVariance() float64 {
+	return mdl.clusters.MeanWeightedVariance()
 }
 
-// Variances returns a copy of the variances of the clustes.
-func (mdl *Model) Variances() []float64 {
-	cpy := make([]float64, 0, len(mdl.variances))
-	copy(cpy, mdl.variances)
-	return cpy
-}
+// PlotMeanVars returns a string representing a chart of the mean variances of several models over a range of k in [kMin, kMax].
+func PlotMeanVars(kMin, kMax int, ps Points, normal bool) string {
+	if kMax < kMin {
+		kMin, kMax = kMax, kMin
+	}
 
-// MaxRepPoint returns the max representing point.
-func (mdl *Model) MaxRepPoint() Point {
-	return mdl.maxPoint.Copy()
-}
+	mnVars := make([]float64, 0, kMax-kMin+1)
+	for k := kMin; k <= kMax; k++ {
+		mnVars = append(mnVars, New(k, ps, normal).MeanWeightedVariance())
+	}
 
-// IsNormed returns true if the model was normalized and false if otherwise.
-func (mdl *Model) IsNormed() bool {
-	return mdl.normalized
-}
-
-// sortAll each cluster in a model.
-func (mdl *Model) sortAll(st SortOpt) {
-	mdl.clusters.SortAll(st)
+	return asciigraph.Plot(
+		mnVars,
+		asciigraph.Caption(fmt.Sprintf("Mean Variances of k-Means Trials for k in [%d,%d]", kMin, kMax)),
+	)
 }
 
 // sort clusters.
@@ -95,60 +149,9 @@ func (mdl *Model) sort() {
 	mdl.update()
 }
 
-// KMeans clusters a set of points into k groups. Potentially, clusters can be empty, so multiple attempts should be made.
-func KMeans(k int, pnts Points, normalize bool) Clusters {
-	// Move points to their nearest cluster until they no longer move with each pass (indicated by the changed boolean).
-	var (
-		clusters  = initClusters(k, pnts, normalize) // Clusters to return
-		changed   = true                             // Indicates if a cluster was altered
-		means     Points                             // Means of clusters
-		minIndex  int                                // Index of cluster having smallest squared distance to a point
-		sd, minSD float64                            // Squared distance; minimum squared distance
-	)
-
-	for changed {
-		changed = false
-
-		// Update the means. If any cluster is empty, its mean, which is nil, will be reassigned to be a random point on the space spanned by the maximum point.
-		means = Means(clusters)
-		for i := range means {
-			if means[i] == nil {
-				randomPoint(pnts)
-			}
-		}
-
-		for h := range clusters {
-			// Each cluster is sorted, so the most variant point is at index clstrs[h][sizes[h]-1]. When the point clstrs[h][i] variance is small enough to not move to another cluster, then we can move on to the next cluster and ignore the other points on the range [0,i). So, h counts down and halts early.
-			for i := 0; i < len(clusters[h]); i++ {
-				// Find the index of the cluster closest to point i in cluster h.
-				minIndex = h
-				minSD = SquaredDistance(means[h], clusters[h][i])
-				for j := range clusters {
-					if h == j {
-						// If h = j, then we are comparing the same cluster. If the size of cluster j is zero, then, obviously, there's no points to compare.
-						continue
-					}
-
-					sd = SquaredDistance(means[j], clusters[h][i])
-					if sd < minSD {
-						minSD = sd
-						minIndex = j
-					}
-				}
-
-				if h == minIndex {
-					// Point i in cluster h is closest to cluster h, so we don't need to move it.
-					continue
-				}
-
-				// Move point i in cluster h to the nearest cluster and update sizes and changed.
-				clusters[minIndex], clusters[h] = Transfer(i, clusters[minIndex], clusters[h])
-				changed = true
-			}
-		}
-	}
-
-	return clusters
+// sortAll each cluster in a model.
+func (mdl *Model) sortAll(st SortOpt) {
+	mdl.clusters.SortAll(st)
 }
 
 // Train clusters a set of points into k groups. Potentially, clusters can be empty, so multiple attempts should be made.
@@ -205,46 +208,78 @@ func (mdl *Model) Train(k int, ps Points, normalize bool) {
 	}
 }
 
-// initClusters returns a set of k-sorted clusters.
-func (mdl *Model) initialize(k int, ps Points, normalize bool) {
-	ps.validate()
-	ps.Shuffle()
-	if normalize {
-		ps.Normalize()
-	}
-
-	mdl.k = k
-	mdl.clusters = make(Clusters, 0, k)
-
-	// Each cluster contains capacity/k points. Remainders will be added to the last cluster (index k-1).
-	var (
-		capacity = len(ps)      // Cluster capacity
-		length   = capacity / k // Cluster length, not including remainder
-		h        int            // Indexer through points
-	)
-	for i := 0; i < k; i++ {
-		c := make(Cluster, 0, capacity)
-		for j := 0; j < length; j++ {
-			c = append(c, ps[h])
-			h++
-		}
-
-		mdl.clusters = append(mdl.clusters, c)
-	}
-
-	// The last cluster is potentially largest if k doesn't divide n evenly. The actual size is s + n mod k. For example, given 32 points on 5 clusters, the size would be 32/5 + 32 mod 5 = 8.
-	for ; h < capacity; h++ {
-		mdl.clusters[k-1] = append(mdl.clusters[k-1], ps[h])
-	}
-
-	mdl.clusters.Coalesce() // Sorts all
-	mdl.update()
-}
-
 // update the means and variances.
 func (mdl *Model) update() {
 	mdl.means = mdl.clusters.Means()
 	mdl.variances = mdl.clusters.Variances()
+}
+
+// Variance returns the variance of cluster i.
+func (mdl *Model) Variance(i int) float64 {
+	return mdl.variances[i]
+}
+
+// Variances returns a copy of the variances of the clustes.
+func (mdl *Model) Variances() []float64 {
+	cpy := make([]float64, 0, len(mdl.variances))
+	copy(cpy, mdl.variances)
+	return cpy
+}
+
+// KMeans clusters a set of points into k groups. Potentially, clusters can be empty, so multiple attempts should be made.
+func KMeans(k int, pnts Points, normalize bool) Clusters {
+	// Move points to their nearest cluster until they no longer move with each pass (indicated by the changed boolean).
+	var (
+		clusters  = initClusters(k, pnts, normalize) // Clusters to return
+		changed   = true                             // Indicates if a cluster was altered
+		means     Points                             // Means of clusters
+		minIndex  int                                // Index of cluster having smallest squared distance to a point
+		sd, minSD float64                            // Squared distance; minimum squared distance
+	)
+
+	for changed {
+		changed = false
+
+		// Update the means. If any cluster is empty, its mean, which is nil, will be reassigned to be a random point on the space spanned by the maximum point.
+		means = Means(clusters)
+		for i := range means {
+			if means[i] == nil {
+				randomPoint(pnts)
+			}
+		}
+
+		for h := range clusters {
+			// Each cluster is sorted, so the most variant point is at index clstrs[h][sizes[h]-1]. When the point clstrs[h][i] variance is small enough to not move to another cluster, then we can move on to the next cluster and ignore the other points on the range [0,i). So, h counts down and halts early.
+			for i := 0; i < len(clusters[h]); i++ {
+				// Find the index of the cluster closest to point i in cluster h.
+				minIndex = h
+				minSD = SquaredDistance(means[h], clusters[h][i])
+				for j := range clusters {
+					if h == j {
+						// If h = j, then we are comparing the same cluster. If the size of cluster j is zero, then, obviously, there's no points to compare.
+						continue
+					}
+
+					sd = SquaredDistance(means[j], clusters[h][i])
+					if sd < minSD {
+						minSD = sd
+						minIndex = j
+					}
+				}
+
+				if h == minIndex {
+					// Point i in cluster h is closest to cluster h, so we don't need to move it.
+					continue
+				}
+
+				// Move point i in cluster h to the nearest cluster and update sizes and changed.
+				clusters[minIndex], clusters[h] = Transfer(i, clusters[minIndex], clusters[h])
+				changed = true
+			}
+		}
+	}
+
+	return clusters
 }
 
 // OptimalKMeans determines (attempts to anyway...) the optimal number of clusters and returns the clustering result.
