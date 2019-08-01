@@ -189,6 +189,7 @@ func test7() {
 		}
 	}
 
+	// Get the assignment of the species means and verify each flower in each species is assigned to the correct cluster
 	var (
 		mdl         = New(len(species), pnts, false)
 		assignments = map[string]int{
@@ -228,6 +229,6 @@ func test7() {
 	fmt.Printf(
 		"Training resulted in %0.2f%% correct\n\n%s\n",
 		100*correct/float64(numPnts),
-		PlotMeanVars(1, 10, pnts, false),
+		PlotMeanVars(1, 5, pnts, false),
 	)
 }

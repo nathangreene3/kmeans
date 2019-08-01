@@ -20,15 +20,17 @@ type Model struct {
 // New returns a trained k-means model.
 func New(k int, ps Points, normalize bool) *Model {
 	var (
-		mdl         = &Model{}
-		minVariance = math.MaxFloat64
-		minClusters Clusters
+		mdl                     = &Model{}
+		meanWeightedVariance    float64
+		minMeanWeightedVariance = math.MaxFloat64
+		minClusters             Clusters
 	)
 
 	for i := 0; i < 5; i++ {
 		mdl.Train(k, ps, normalize)
-		if mdl.MeanWeightedVariance() < minVariance {
+		if meanWeightedVariance = mdl.MeanWeightedVariance(); meanWeightedVariance < minMeanWeightedVariance {
 			minClusters = mdl.clusters
+			minMeanWeightedVariance = meanWeightedVariance
 		}
 	}
 
@@ -224,106 +226,4 @@ func (mdl *Model) Variances() []float64 {
 	cpy := make([]float64, 0, len(mdl.variances))
 	copy(cpy, mdl.variances)
 	return cpy
-}
-
-// KMeans clusters a set of points into k groups. Potentially, clusters can be empty, so multiple attempts should be made.
-func KMeans(k int, pnts Points, normalize bool) Clusters {
-	// Move points to their nearest cluster until they no longer move with each pass (indicated by the changed boolean).
-	var (
-		clusters  = initClusters(k, pnts, normalize) // Clusters to return
-		changed   = true                             // Indicates if a cluster was altered
-		means     Points                             // Means of clusters
-		minIndex  int                                // Index of cluster having smallest squared distance to a point
-		sd, minSD float64                            // Squared distance; minimum squared distance
-	)
-
-	for changed {
-		changed = false
-
-		// Update the means. If any cluster is empty, its mean, which is nil, will be reassigned to be a random point on the space spanned by the maximum point.
-		means = Means(clusters)
-		for i := range means {
-			if means[i] == nil {
-				randomPoint(pnts)
-			}
-		}
-
-		for h := range clusters {
-			// Each cluster is sorted, so the most variant point is at index clstrs[h][sizes[h]-1]. When the point clstrs[h][i] variance is small enough to not move to another cluster, then we can move on to the next cluster and ignore the other points on the range [0,i). So, h counts down and halts early.
-			for i := 0; i < len(clusters[h]); i++ {
-				// Find the index of the cluster closest to point i in cluster h.
-				minIndex = h
-				minSD = SquaredDistance(means[h], clusters[h][i])
-				for j := range clusters {
-					if h == j {
-						// If h = j, then we are comparing the same cluster. If the size of cluster j is zero, then, obviously, there's no points to compare.
-						continue
-					}
-
-					sd = SquaredDistance(means[j], clusters[h][i])
-					if sd < minSD {
-						minSD = sd
-						minIndex = j
-					}
-				}
-
-				if h == minIndex {
-					// Point i in cluster h is closest to cluster h, so we don't need to move it.
-					continue
-				}
-
-				// Move point i in cluster h to the nearest cluster and update sizes and changed.
-				clusters[minIndex], clusters[h] = Transfer(i, clusters[minIndex], clusters[h])
-				changed = true
-			}
-		}
-	}
-
-	return clusters
-}
-
-// OptimalKMeans determines (attempts to anyway...) the optimal number of clusters and returns the clustering result.
-func OptimalKMeans(pnts Points, normalize bool) (int, Clusters) {
-	var (
-		n        = len(pnts) // Number of points
-		vars     []float64
-		varsPnts Points // Vars converted to points
-	)
-	n = 10 // Halt at k = 1..n until testing is done.
-
-	// if n <= 10 {
-	// Run k-means on k = 1..n and track the mean variance.
-	varsPnts = make(Points, 0, n)
-	for numClstrs := 1; numClstrs <= n; numClstrs++ {
-		vars = append(vars, MeanVariance(KMeans(numClstrs, pnts, normalize)))
-		varsPnts = append(varsPnts, Point{vars[numClstrs-1]})
-	}
-
-	// Run 2-means on the variances to find the elbow point at which smaller numbers of clusters increases the mean variance.
-	var (
-		k          int                              // Optimal k
-		minIndex   int                              // Index of cluster having the smallest mean variance
-		v          float64                          // Variance
-		maxVars    float64                          // Maximum variance
-		varsClstrs = KMeans(2, varsPnts, normalize) // Variance clusters run on k = 2 to find the elbow point k
-	)
-
-	if 0 < ComparePoints(Mean(varsClstrs[0]), Mean(varsClstrs[1])) {
-		// Mean var of cluster 0 > mean var of cluster 1
-		minIndex = 1
-	}
-
-	// Find the index of the largest value in the cluster with the smaller mean variance.
-	for i := range varsClstrs[minIndex] {
-		v = varsClstrs[minIndex][i][0]
-		if maxVars < v {
-			maxVars = v
-			k = i + 1
-		}
-	}
-
-	return k, KMeans(k, pnts, normalize)
-	// }
-
-	// return 0, nil
 }
