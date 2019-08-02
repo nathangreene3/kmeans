@@ -127,8 +127,8 @@ func (mdl *Model) MeanWeightedVariance() float64 {
 	return mdl.clusters.MeanWeightedVariance()
 }
 
-// PlotMeanVars returns a string representing a chart of the mean variances of several models over a range of k in [kMin, kMax].
-func PlotMeanVars(kMin, kMax int, ps Points, normal bool) string {
+// PlotMeanWeightedVars returns a string representing a chart of the mean variances of several models over a range of k in [kMin, kMax].
+func PlotMeanWeightedVars(kMin, kMax int, ps Points, normal bool) string {
 	if kMax < kMin {
 		kMin, kMax = kMax, kMin
 	}
@@ -223,4 +223,23 @@ func (mdl *Model) Variances() []float64 {
 	cpy := make([]float64, 0, len(mdl.variances))
 	copy(cpy, mdl.variances)
 	return cpy
+}
+
+// optimalK ...TODO
+func optimalK(ps Points, normal bool, minK, maxK int) int {
+	if maxK < minK {
+		minK, maxK = maxK, minK
+	}
+
+	var (
+		optK = minK
+		n    = maxK - minK + 1
+		vars = make([]float64, 0, n)
+	)
+
+	for k := minK; k <= maxK; k++ {
+		vars = append(vars, New(k, ps, normal).MeanWeightedVariance())
+	}
+
+	return optK
 }
