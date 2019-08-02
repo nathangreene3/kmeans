@@ -200,10 +200,10 @@ func test7() {
 	)
 
 	// Check that assignments are distinct.
-	for k0, v0 := range assignments {
-		for k1, v1 := range assignments {
-			if k0 != k1 && v0 == v1 {
-				log.Fatal("failed to categorize means")
+	for species0, assignment0 := range assignments {
+		for species1, assignment1 := range assignments {
+			if species0 != species1 && assignment0 == assignment1 {
+				log.Fatal("failed to categorize test species means")
 			}
 		}
 	}

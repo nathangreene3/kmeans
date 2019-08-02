@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/guptarohit/asciigraph"
+	graph "github.com/guptarohit/asciigraph"
 )
 
 // Model holds k-means clusters and their meta data.
@@ -43,8 +43,8 @@ func New(k int, ps Points, normalize bool) *Model {
 func (mdl *Model) Assignment(pnt Point) int {
 	var (
 		assignment int
-		sd         float64
-		minSD      = math.MaxFloat64
+		sqDist     float64
+		minSqDist  = math.MaxFloat64
 	)
 
 	if mdl.normalized {
@@ -52,19 +52,13 @@ func (mdl *Model) Assignment(pnt Point) int {
 	}
 
 	for i := range mdl.means {
-		sd = SquaredDistance(mdl.means[i], pnt)
-		if sd < minSD {
-			minSD = sd
+		if sqDist = pnt.SqDist(mdl.means[i]); sqDist < minSqDist {
+			minSqDist = sqDist
 			assignment = i
 		}
 	}
 
 	return assignment
-}
-
-// K returns the number of clusters.
-func (mdl *Model) K() int {
-	return mdl.k
 }
 
 // initClusters returns a set of k-sorted clusters.
@@ -108,12 +102,17 @@ func (mdl *Model) IsNormed() bool {
 	return mdl.normalized
 }
 
+// K returns the number of clusters.
+func (mdl *Model) K() int {
+	return mdl.k
+}
+
 // MaxRepPoint returns the max representing point.
 func (mdl *Model) MaxRepPoint() Point {
 	return mdl.maxPoint.Copy()
 }
 
-// Mean returns the Mean of cluster i.
+// Mean returns the mean of cluster i.
 func (mdl *Model) Mean(i int) Point {
 	return mdl.means[i].Copy()
 }
@@ -139,10 +138,8 @@ func PlotMeanVars(kMin, kMax int, ps Points, normal bool) string {
 		mnVars = append(mnVars, New(k, ps, normal).MeanWeightedVariance())
 	}
 
-	return asciigraph.Plot(
-		mnVars,
-		asciigraph.Caption(fmt.Sprintf("Mean Variances of k-Means Trials for k in [%d,%d]", kMin, kMax)),
-	)
+	caption := fmt.Sprintf("Mean Variances of k-Means Trials for k in [%d,%d]", kMin, kMax)
+	return graph.Plot(mnVars, graph.Caption(caption))
 }
 
 // sort clusters.
@@ -151,7 +148,7 @@ func (mdl *Model) sort() {
 	mdl.update()
 }
 
-// sortAll each cluster in a model.
+// sortAll sorts each cluster in a model. The order of the clusters is NOT sorted.
 func (mdl *Model) sortAll(st SortOpt) {
 	mdl.clusters.SortAll(st)
 }

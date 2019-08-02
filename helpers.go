@@ -12,13 +12,21 @@ var (
 	seed int64
 )
 
-// seedRNG the random number generator.
-func seedRNG() {
-	if !seeded {
-		seed = int64(time.Now().Nanosecond())
-		rand.Seed(seed)
-		seeded = true
+// max returns the maximum value.
+func max(values ...int) int {
+	var (
+		maximum = values[0]
+		n       = len(values)
+		v       int
+	)
+
+	for i := 1; i < n; i++ {
+		if v = values[i]; maximum < v {
+			maximum = v
+		}
 	}
+
+	return maximum
 }
 
 // maxPow returns the largest power p such that b^p <= n for a given base b > 0. Assumes b,n > 0.
@@ -33,11 +41,7 @@ func maxPow(b, n int) int {
 }
 
 // mean returns the mean of a set of numbers. Assumes x is not empty.
-func mean(x []float64) float64 {
-	if len(x) == 0 {
-		panic("mean: cannot take the mean of an empty set")
-	}
-
+func mean(x ...float64) float64 {
 	var v float64 // Sum of values in x
 	for i := range x {
 		v += x[i]
@@ -46,20 +50,50 @@ func mean(x []float64) float64 {
 	return v / float64(len(x))
 }
 
-// max returns the maximum value.
-func max(m, n int) int {
-	if m < n {
-		return n
+// min returns the minimum value.
+func min(values ...int) int {
+	var (
+		minimum = values[0]
+		n       = len(values)
+		v       int
+	)
+
+	for i := 1; i < n; i++ {
+		if v = values[i]; v < minimum {
+			minimum = v
+		}
 	}
 
-	return m
+	return minimum
 }
 
-// min returns the minimum value.
-func min(m, n int) int {
-	if m < n {
-		return m
+// seedRNG the random number generator.
+func seedRNG() {
+	if !seeded {
+		seed = int64(time.Now().Nanosecond())
+		rand.Seed(seed)
+		seeded = true
+	}
+}
+
+func roundDown(x float64) int {
+	return int(x)
+}
+
+func roundUp(x float64) int {
+	n := int(x)
+	if float64(n) < x {
+		n++
 	}
 
 	return n
+}
+
+func roundUpToMult(x float64, n int) int {
+	m := int(x)
+	if mod := m % n; 0 < mod {
+		m += n - mod
+	}
+
+	return m
 }
