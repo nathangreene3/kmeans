@@ -1,4 +1,4 @@
-package main
+package kmeans
 
 import (
 	"math/rand"
@@ -76,10 +76,12 @@ func seedRNG() {
 	}
 }
 
+// roundDown to the nearest integer.
 func roundDown(x float64) int {
 	return int(x)
 }
 
+// roundUp to the nearest integer.
 func roundUp(x float64) int {
 	n := int(x)
 	if float64(n) < x {
@@ -89,6 +91,7 @@ func roundUp(x float64) int {
 	return n
 }
 
+// roundUpToMult rounds x up to the next multiple of n.
 func roundUpToMult(x float64, n int) int {
 	m := int(x)
 	if mod := m % n; 0 < mod {

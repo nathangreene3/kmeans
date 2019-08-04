@@ -1,4 +1,4 @@
-package main
+package kmeans
 
 import "sort"
 
@@ -8,14 +8,13 @@ type Cluster Points
 // CompareTo returns -1, 0, or 1 indicating cluster c precedes, is equal to, or follows another cluster.
 func (c Cluster) CompareTo(clstr Cluster) int {
 	m, n := len(c), len(clstr)
-	if m == 0 {
+	switch {
+	case m == 0:
 		if n == 0 {
 			return 0
 		}
 		return -1
-	}
-
-	if n == 0 {
+	case n == 0:
 		return 1
 	}
 
@@ -27,25 +26,24 @@ func (c Cluster) CompareTo(clstr Cluster) int {
 		}
 	}
 
-	if m < n {
-		// Point 0 is shorter than point 1 (while equal over the range [0,m))
+	switch {
+	case m < n:
+		// c is shorter (while equal over the range [0,m))
 		return -1
-	}
-
-	if n < m {
-		// Point 1 is shorter than point 0 (while equal over the range [0,n))
+	case n < m:
+		// clstr is shorter (while equal over the range [0,n))
 		return 1
+	default:
+		// c and clster are equal in length and in each point
+		return 0
 	}
-
-	// Points are equal in length and in each value
-	return 0
 }
 
 // Copy a cluster.
 func (c Cluster) Copy() Cluster {
 	cpy := make(Cluster, 0, len(c))
-	for i := range c {
-		cpy = append(cpy, c[i].Copy())
+	for _, p := range c {
+		cpy = append(cpy, p.Copy())
 	}
 
 	return cpy
@@ -63,9 +61,13 @@ func (c Cluster) Mean() Point {
 
 	d := len(c[0])
 	mn := make(Point, d)
-	for i := range c {
-		for j := range c[i] {
-			mn[j] += c[i][j]
+	for _, clstr := range c {
+		if d != len(clstr) {
+			panic("dimension mismatch")
+		}
+
+		for j := 0; j < d; j++ {
+			mn[j] += clstr[j]
 		}
 	}
 
@@ -103,10 +105,10 @@ func (c Cluster) Variance() float64 {
 	}
 
 	// The variance is the sum of the squared Euclidean distances, divided by the number of points minus one.
-	mn := c.Mean() // Cluster mean
-	var v float64  // Variance to return
-	for i := range c {
-		v += mn.SqDist(c[i])
+	mn := c.Mean()
+	var v float64
+	for _, p := range c {
+		v += mn.SqDist(p)
 	}
 
 	return v / float64(n-1)

@@ -1,4 +1,4 @@
-package main
+package kmeans
 
 import (
 	"math"
@@ -9,8 +9,13 @@ type Point []float64
 
 // SqDist returns the squared distance between two points.
 func (p Point) SqDist(pnt Point) float64 {
+	n := len(p)
+	if n != len(pnt) {
+		panic("dimension mismatch")
+	}
+
 	var sd, d float64 // Squared distance, Difference in each dimension
-	for i := range p {
+	for i := 0; i < n; i++ {
 		d = p[i] - pnt[i]
 		sd += d * d
 	}
@@ -40,11 +45,10 @@ func (p Point) CompareTo(q Point) int {
 	}
 
 	for i := 0; i < n; i++ {
-		if p[i] < q[i] {
+		switch {
+		case p[i] < q[i]:
 			return -1
-		}
-
-		if q[i] < p[i] {
+		case q[i] < p[i]:
 			return 1
 		}
 	}

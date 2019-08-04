@@ -1,4 +1,4 @@
-package main
+package kmeans
 
 import (
 	"math/rand"
@@ -25,14 +25,17 @@ func (ps Points) MaxRep() Point {
 	}
 
 	var (
-		maxPnt = make(Point, len(ps[0]))
-		n      = len(maxPnt)
 		v      float64
+		n      = len(ps[0])
+		maxPnt = make(Point, n)
 	)
-	for i := range ps {
+	for _, p := range ps {
+		if n != len(p) {
+			panic("dimension mismatch")
+		}
+
 		for j := 0; j < n; j++ {
-			v = ps[i][j]
-			if v < 0 {
+			if v = p[j]; v < 0 {
 				v = -v
 			}
 
@@ -49,10 +52,10 @@ func (ps Points) MaxRep() Point {
 func (ps Points) Normalize() {
 	// Check if max point is normal. If it is, the points are already normalized.
 	maxPnt := ps.MaxRep()
-	for i := range maxPnt {
-		if 1 < maxPnt[i] {
-			for j := range ps {
-				ps[j].Normalize(maxPnt)
+	for _, v := range maxPnt {
+		if 1 < v {
+			for _, p := range ps {
+				p.Normalize(maxPnt)
 			}
 			break
 		}
@@ -90,19 +93,21 @@ func (ps Points) ToCluster() Cluster {
 
 // validate panics if there are no points or if any points are of unequal or zero dimension.
 func (ps Points) validate() {
+	// TODO: Make real errors instead of panicing.
+
 	numPnts := len(ps)
 	if numPnts == 0 {
-		panic("validate: no points")
+		panic("no points")
 	}
 
 	dims := len(ps[0])
 	if dims == 0 {
-		panic("validate: dimensionless point")
+		panic("dimensionless point")
 	}
 
 	for i := 1; i < numPnts; i++ {
 		if dims != len(ps[i]) {
-			panic("validate: dimension mismatch")
+			panic("dimension mismatch")
 		}
 	}
 }

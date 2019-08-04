@@ -1,4 +1,4 @@
-package main
+package kmeans
 
 // SortOpt indicates how a cluster is sorted.
 type SortOpt int

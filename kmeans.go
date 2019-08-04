@@ -1,4 +1,4 @@
-package main
+package kmeans
 
 import (
 	"fmt"
@@ -78,6 +78,7 @@ func (mdl *Model) initialize(k int, ps Points, normalize bool) {
 		length   = capacity / k // Cluster length, not including remainder
 		h        int            // Indexer through points
 	)
+
 	for i := 0; i < k; i++ {
 		c := make(Cluster, 0, capacity)
 		for j := 0; j < length; j++ {
@@ -223,23 +224,4 @@ func (mdl *Model) Variances() []float64 {
 	cpy := make([]float64, 0, len(mdl.variances))
 	copy(cpy, mdl.variances)
 	return cpy
-}
-
-// optimalK ...TODO
-func optimalK(ps Points, normal bool, minK, maxK int) int {
-	if maxK < minK {
-		minK, maxK = maxK, minK
-	}
-
-	var (
-		optK = minK
-		n    = maxK - minK + 1
-		vars = make([]float64, 0, n)
-	)
-
-	for k := minK; k <= maxK; k++ {
-		vars = append(vars, New(k, ps, normal).MeanWeightedVariance())
-	}
-
-	return optK
 }
