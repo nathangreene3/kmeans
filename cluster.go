@@ -28,14 +28,11 @@ func (c Cluster) CompareTo(clstr Cluster) int {
 
 	switch {
 	case m < n:
-		// c is shorter (while equal over the range [0,m))
-		return -1
+		return -1 // c is shorter (while equal over the range [0,m))
 	case n < m:
-		// clstr is shorter (while equal over the range [0,n))
-		return 1
+		return 1 // clstr is shorter (while equal over the range [0,n))
 	default:
-		// c and clster are equal in length and in each point
-		return 0
+		return 0 // c and clster are equal in length and in each point
 	}
 }
 
@@ -92,8 +89,11 @@ func (c Cluster) Sort(st SortOpt) {
 
 // ToPoints returns a set of points from a cluster.
 func (c Cluster) ToPoints() Points {
-	ps := make(Points, len(c))
-	copy(ps, c)
+	ps := make(Points, 0, len(c))
+	for _, p := range c {
+		ps = append(ps, p.Copy())
+	}
+
 	return ps
 }
 

@@ -19,8 +19,7 @@ func (cs Clusters) Coalesce() {
 		numPntsI = len(cs[i])
 		for j := 0; j < numPntsI; j++ {
 			if j+1 < numPntsI && cs[i][j].CompareTo(cs[i][j+1]) == 0 {
-				// Points j and j+1 are equal, so keep iterating until the last equal point is found.
-				continue
+				continue // Points j and j+1 are equal, so keep iterating until the last equal point is found.
 			}
 
 			for k := i + 1; k < numClstrs; k++ {

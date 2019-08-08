@@ -283,7 +283,7 @@ func TestSepals(t *testing.T) {
 	}
 
 	if correct < 100 {
-		t.Fatalf("k-means model trained and was accurate only %0.2f%% of the time", correct)
+		t.Fatalf("k-means model trained and was correct only %0.2f%% of the time", correct)
 	}
 }
 

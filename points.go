@@ -86,8 +86,11 @@ func (ps Points) Sort() {
 
 // ToCluster returns a cluster converted from a set of points.
 func (ps Points) ToCluster() Cluster {
-	c := make(Cluster, len(ps))
-	copy(c, ps)
+	c := make(Cluster, 0, len(ps))
+	for _, p := range ps {
+		c = append(c, p.Copy())
+	}
+
 	return c
 }
 
@@ -95,19 +98,16 @@ func (ps Points) ToCluster() Cluster {
 func (ps Points) validate() {
 	// TODO: Make real errors instead of panicing.
 
-	numPnts := len(ps)
-	if numPnts == 0 {
-		panic("no points")
-	}
+	if n := len(ps); 0 < n {
+		d := len(ps[0])
+		if d == 0 {
+			panic("dimensionless point")
+		}
 
-	dims := len(ps[0])
-	if dims == 0 {
-		panic("dimensionless point")
-	}
-
-	for i := 1; i < numPnts; i++ {
-		if dims != len(ps[i]) {
-			panic("dimension mismatch")
+		for i := 1; i < n; i++ {
+			if d != len(ps[i]) {
+				panic("dimension mismatch")
+			}
 		}
 	}
 }
