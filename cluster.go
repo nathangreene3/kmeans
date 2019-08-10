@@ -1,6 +1,9 @@
 package kmeans
 
-import "sort"
+import (
+	"math"
+	"sort"
+)
 
 // Cluster is a set of points.
 type Cluster Points
@@ -56,20 +59,17 @@ func (c Cluster) Mean() Point {
 		return c[0].Copy()
 	}
 
-	d := len(c[0])
-	mn := make(Point, d)
-	for _, clstr := range c {
-		if d != len(clstr) {
-			panic("dimension mismatch")
-		}
+	var (
+		mn    Point
+		mnVar = math.MaxFloat64
+		v     float64
+	)
 
-		for j := 0; j < d; j++ {
-			mn[j] += clstr[j]
+	for _, p := range c {
+		if v = c.Variance(p); v < mnVar {
+			mn = p
+			mnVar = v
 		}
-	}
-
-	for i := range mn {
-		mn[i] /= n
 	}
 
 	return mn
@@ -98,17 +98,16 @@ func (c Cluster) ToPoints() Points {
 }
 
 // Variance returns the Variance of the cluster to the mean.
-func (c Cluster) Variance() float64 {
+func (c Cluster) Variance(mean Point) float64 {
 	n := len(c)
 	if n < 2 {
 		return 0
 	}
 
 	// The variance is the sum of the squared Euclidean distances, divided by the number of points minus one.
-	mn := c.Mean()
 	var v float64
 	for _, p := range c {
-		v += mn.SqDist(p)
+		v += mean.SqDist(p)
 	}
 
 	return v / float64(n-1)

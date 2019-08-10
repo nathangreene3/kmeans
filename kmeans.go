@@ -9,16 +9,14 @@ import (
 
 // Model holds k-means clusters and their meta data.
 type Model struct {
-	k          int       // Number of clusters
-	clusters   Clusters  // Clusters returned from k-means
-	means      Points    // Means of clusters
-	variances  []float64 // Variances of clusters
-	maxPoint   Point     // Max representing point
-	normalized bool      // Indicates if normalized
+	k         int       // Number of clusters
+	clusters  Clusters  // Clusters returned from k-means
+	means     Points    // Means of clusters
+	variances []float64 // Variances of clusters
 }
 
 // New returns a trained k-means model.
-func New(k int, ps Points, normalize bool) *Model {
+func New(k int, ps Points) *Model {
 	var (
 		mdl                     = &Model{}
 		meanWeightedVariance    float64
@@ -27,7 +25,7 @@ func New(k int, ps Points, normalize bool) *Model {
 	)
 
 	for i := 0; i < 5; i++ {
-		mdl.Train(k, ps, normalize)
+		mdl.Train(k, ps)
 		if meanWeightedVariance = mdl.MeanWeightedVariance(); meanWeightedVariance < minMeanWeightedVariance {
 			minClusters = mdl.clusters
 			minMeanWeightedVariance = meanWeightedVariance
@@ -47,10 +45,6 @@ func (mdl *Model) Assignment(pnt Point) int {
 		minSqDist  = math.MaxFloat64
 	)
 
-	if mdl.normalized {
-		pnt.Normalize(mdl.maxPoint)
-	}
-
 	for i := range mdl.means {
 		if sqDist = pnt.SqDist(mdl.means[i]); sqDist < minSqDist {
 			minSqDist = sqDist
@@ -62,12 +56,9 @@ func (mdl *Model) Assignment(pnt Point) int {
 }
 
 // initClusters returns a set of k-sorted clusters.
-func (mdl *Model) initialize(k int, ps Points, normalize bool) {
+func (mdl *Model) initialize(k int, ps Points) {
 	ps.validate()
 	ps.Shuffle()
-	if normalize {
-		ps.Normalize()
-	}
 
 	mdl.k = k
 	mdl.clusters = make(Clusters, 0, k)
@@ -98,19 +89,9 @@ func (mdl *Model) initialize(k int, ps Points, normalize bool) {
 	mdl.update()
 }
 
-// IsNormed returns true if the model was normalized and false if otherwise.
-func (mdl *Model) IsNormed() bool {
-	return mdl.normalized
-}
-
 // K returns the number of clusters.
 func (mdl *Model) K() int {
 	return mdl.k
-}
-
-// MaxRepPoint returns the max representing point.
-func (mdl *Model) MaxRepPoint() Point {
-	return mdl.maxPoint.Copy()
 }
 
 // Mean returns the mean of cluster i.
@@ -129,14 +110,14 @@ func (mdl *Model) MeanWeightedVariance() float64 {
 }
 
 // PlotMeanWeightedVars returns a string representing a chart of the mean variances of several models over a range of k in [kMin, kMax].
-func PlotMeanWeightedVars(kMin, kMax int, ps Points, normal bool) string {
+func PlotMeanWeightedVars(kMin, kMax int, ps Points) string {
 	if kMax < kMin {
 		kMin, kMax = kMax, kMin
 	}
 
 	mnVars := make([]float64, 0, kMax-kMin+1)
 	for k := kMin; k <= kMax; k++ {
-		mnVars = append(mnVars, New(k, ps, normal).MeanWeightedVariance())
+		mnVars = append(mnVars, New(k, ps).MeanWeightedVariance())
 	}
 
 	caption := fmt.Sprintf("Mean Variances of k-Means Trials for k in [%d,%d]", kMin, kMax)
@@ -155,8 +136,8 @@ func (mdl *Model) sortAll(st SortOpt) {
 }
 
 // Train clusters a set of points into k groups. Potentially, clusters can be empty, so multiple attempts should be made.
-func (mdl *Model) Train(k int, ps Points, normalize bool) {
-	mdl.initialize(k, ps, normalize)
+func (mdl *Model) Train(k int, ps Points) {
+	mdl.initialize(k, ps)
 
 	// Move points to their nearest cluster until they no longer move with each pass (indicated by the changed boolean).
 	var (

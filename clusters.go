@@ -81,7 +81,7 @@ func (cs Clusters) Means() Points {
 func (cs Clusters) MeanVariance() float64 {
 	var v float64 // Sum of variances
 	for _, c := range cs {
-		v += c.Variance()
+		v += c.Variance(c.Mean())
 	}
 
 	return v / float64(len(cs))
@@ -98,7 +98,7 @@ func (cs Clusters) MeanWeightedVariance() float64 {
 	for _, c := range cs {
 		s = float64(len(c))
 		n += s
-		v += s * c.Variance()
+		v += s * c.Variance(c.Mean())
 	}
 
 	return v / n
@@ -120,7 +120,7 @@ func (cs Clusters) SortAll(st SortOpt) {
 func (cs Clusters) Variances() []float64 {
 	vars := make([]float64, 0, len(cs))
 	for _, c := range cs {
-		vars = append(vars, c.Variance())
+		vars = append(vars, c.Variance(c.Mean()))
 	}
 
 	return vars
