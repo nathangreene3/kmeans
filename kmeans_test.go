@@ -207,7 +207,7 @@ func TestModel(t *testing.T) {
 	for _, test := range tests {
 		mdl := New(test.k, test.pnts)
 		mdl.sort()
-		mdl.sortAll(LexiSort)
+		mdl.sortAll(SortByDimension)
 		sort.SliceStable(test.expectedClusters, func(i, j int) bool { return test.expectedClusters[i].CompareTo(test.expectedClusters[j]) < 0 })
 		for h := range test.expectedClusters {
 			sort.SliceStable(test.expectedClusters[h], func(i, j int) bool { return test.expectedClusters[h][i].CompareTo(test.expectedClusters[h][j]) < 0 })

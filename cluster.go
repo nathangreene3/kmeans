@@ -76,13 +76,13 @@ func (c Cluster) Mean() Point {
 }
 
 // Sort a cluster by a sorting option.
-func (c Cluster) Sort(sortOpt SortOpt) {
+func (c Cluster) Sort(sortOpt SortOption) {
 	switch sortOpt {
-	case VarSort:
+	case SortByVariance:
 		if mn := c.Mean(); mn != nil {
 			sort.SliceStable(c, func(i, j int) bool { return mn.SqDist(c[i]) < mn.SqDist(c[j]) })
 		}
-	case LexiSort:
+	case SortByDimension:
 		sort.SliceStable(c, func(i, j int) bool { return c[i].CompareTo(c[j]) < 0 })
 	}
 }
@@ -116,7 +116,7 @@ func (c Cluster) Variance(mean Point) float64 {
 // Transfer ith point from the source cluster to the destination cluster. Returns (dest, src).
 func Transfer(i int, destination, source Cluster) (Cluster, Cluster) {
 	destination = append(destination, source[i])
-	destination.Sort(VarSort)
+	destination.Sort(SortByVariance)
 	if i+1 < len(source) {
 		return destination, append(source[:i], source[i+1:]...)
 	}

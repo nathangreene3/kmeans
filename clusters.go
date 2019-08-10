@@ -7,7 +7,7 @@ type Clusters []Cluster
 
 // Coalesce ensures clusters containing equivalent points are placed in one cluster. For each cluster i, the points in each cluster j are compared and equivalent points are moved to cluster i.
 func (cs Clusters) Coalesce() {
-	cs.SortAll(VarSort)
+	cs.SortAll(SortByVariance)
 
 	var (
 		m = len(cs)
@@ -36,7 +36,7 @@ func (cs Clusters) Coalesce() {
 			}
 		}
 
-		cs[i].Sort(VarSort)
+		cs[i].Sort(SortByVariance)
 	}
 }
 
@@ -63,7 +63,7 @@ func (cs Clusters) Join() Cluster {
 		joinedCluster = append(joinedCluster, c...)
 	}
 
-	joinedCluster.Sort(VarSort)
+	joinedCluster.Sort(SortByVariance)
 	return joinedCluster
 }
 
@@ -110,9 +110,9 @@ func (cs Clusters) Sort() {
 }
 
 // SortAll sorts each cluster. The set of clusters is NOT sorted.
-func (cs Clusters) SortAll(st SortOpt) {
+func (cs Clusters) SortAll(sortOpt SortOption) {
 	for _, c := range cs {
-		c.Sort(st)
+		c.Sort(sortOpt)
 	}
 }
 

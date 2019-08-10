@@ -1,6 +1,6 @@
 # k-Means
 
-```Go
+```go
 go get github.com/nathangreene3/kmeans
 ```
 
@@ -10,7 +10,7 @@ The k-means algorithm is an unsuperised learning technique for grouping data int
 
 ## Point
 
-Point is an interface to implement k-means upon data. The provided data type is FPoint, a slice of float64s.
+Point is an interface to implement k-means upon data. The provided implementation is FPoint, a slice of float64s.
 
 ```go
 type Point interface {

@@ -1,11 +1,11 @@
 package kmeans
 
-// SortOpt indicates how a cluster is sorted.
-type SortOpt int
+// SortOption indicates how a cluster is sorted.
+type SortOption int
 
 const (
-	// VarSort dictates points will be compared by variance to the cluster mean.
-	VarSort SortOpt = 1 << iota
-	// LexiSort dictates points will be compared by the default comparer, which is lexicographic.
-	LexiSort
+	// SortByVariance dictates points will be compared by variance to the cluster mean.
+	SortByVariance SortOption = 1 << iota
+	// SortByDimension dictates points will be compared by dictionary-order.
+	SortByDimension
 )

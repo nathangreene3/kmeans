@@ -131,7 +131,7 @@ func (mdl *Model) sort() {
 }
 
 // sortAll sorts each cluster in a model. The order of the clusters is NOT sorted.
-func (mdl *Model) sortAll(sortOpt SortOpt) {
+func (mdl *Model) sortAll(sortOpt SortOption) {
 	mdl.clusters.SortAll(sortOpt)
 }
 
