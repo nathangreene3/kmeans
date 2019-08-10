@@ -16,7 +16,7 @@ type Model struct {
 }
 
 // New returns a trained k-means model.
-func New(k int, ps Points) *Model {
+func New(k int, points Points) *Model {
 	var (
 		model                   = &Model{}
 		meanWeightedVariance    float64
@@ -25,7 +25,7 @@ func New(k int, ps Points) *Model {
 	)
 
 	for i := 0; i < 5; i++ {
-		model.Train(k, ps)
+		model.Train(k, points)
 		if meanWeightedVariance = model.MeanWeightedVariance(); meanWeightedVariance < minMeanWeightedVariance {
 			minClusters = model.clusters
 			minMeanWeightedVariance = meanWeightedVariance
@@ -38,7 +38,7 @@ func New(k int, ps Points) *Model {
 }
 
 // Assignment returns the index of the cluster a point belongs to.
-func (mdl *Model) Assignment(pnt Point) int {
+func (mdl *Model) Assignment(point Point) int {
 	var (
 		assignment int
 		sqDist     float64
@@ -46,7 +46,7 @@ func (mdl *Model) Assignment(pnt Point) int {
 	)
 
 	for i := range mdl.means {
-		if sqDist = pnt.SqDist(mdl.means[i]); sqDist < minSqDist {
+		if sqDist = point.SqDist(mdl.means[i]); sqDist < minSqDist {
 			minSqDist = sqDist
 			assignment = i
 		}
@@ -71,13 +71,13 @@ func (mdl *Model) initialize(k int, ps Points) {
 	)
 
 	for i := 0; i < k; i++ {
-		c := make(Cluster, 0, capacity)
+		cluster := make(Cluster, 0, capacity)
 		for j := 0; j < length; j++ {
-			c = append(c, ps[h])
+			cluster = append(cluster, ps[h])
 			h++
 		}
 
-		mdl.clusters = append(mdl.clusters, c)
+		mdl.clusters = append(mdl.clusters, cluster)
 	}
 
 	// The last cluster is potentially largest if k doesn't divide n evenly. The actual size is s + n mod k. For example, given 32 points on 5 clusters, the size would be 32/5 + 32 mod 5 = 8.
@@ -110,18 +110,18 @@ func (mdl *Model) MeanWeightedVariance() float64 {
 }
 
 // PlotMeanWeightedVars returns a string representing a chart of the mean variances of several models over a range of k in [kMin, kMax].
-func PlotMeanWeightedVars(kMin, kMax int, ps Points) string {
+func PlotMeanWeightedVars(kMin, kMax int, points Points) string {
 	if kMax < kMin {
 		kMin, kMax = kMax, kMin
 	}
 
-	mnVars := make([]float64, 0, kMax-kMin+1)
+	meanVariances := make([]float64, 0, kMax-kMin+1)
 	for k := kMin; k <= kMax; k++ {
-		mnVars = append(mnVars, New(k, ps).MeanWeightedVariance())
+		meanVariances = append(meanVariances, New(k, points).MeanWeightedVariance())
 	}
 
 	caption := fmt.Sprintf("Mean Variances of k-Means Trials for k in [%d,%d]", kMin, kMax)
-	return graph.Plot(mnVars, graph.Caption(caption))
+	return graph.Plot(meanVariances, graph.Caption(caption))
 }
 
 // sort clusters.
@@ -131,13 +131,13 @@ func (mdl *Model) sort() {
 }
 
 // sortAll sorts each cluster in a model. The order of the clusters is NOT sorted.
-func (mdl *Model) sortAll(st SortOpt) {
-	mdl.clusters.SortAll(st)
+func (mdl *Model) sortAll(sortOpt SortOpt) {
+	mdl.clusters.SortAll(sortOpt)
 }
 
 // Train clusters a set of points into k groups. Potentially, clusters can be empty, so multiple attempts should be made.
-func (mdl *Model) Train(k int, ps Points) {
-	mdl.initialize(k, ps)
+func (mdl *Model) Train(k int, points Points) {
+	mdl.initialize(k, points)
 
 	// Move points to their nearest cluster until they no longer move with each pass (indicated by the changed boolean).
 	var (
@@ -153,7 +153,7 @@ func (mdl *Model) Train(k int, ps Points) {
 		mdl.update()
 		for i := range mdl.means {
 			if mdl.means[i] == nil {
-				ps.Random()
+				points.Random()
 			}
 		}
 
