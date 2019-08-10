@@ -13,7 +13,7 @@ func (p FPoint) At(i int) float64 {
 // CompareTo returns -1, 0, or 1 indicating point 0 precedes, is equal to, or follows point 1.
 func (p FPoint) CompareTo(q Point) int {
 	n := len(p)
-	if n != q.Length() {
+	if n != q.Len() {
 		panic("dimension mismatch")
 	}
 
@@ -42,14 +42,14 @@ func (p FPoint) Dist(pnt Point) float64 {
 }
 
 // Length returns the number of dimensions of a point.
-func (p FPoint) Length() int {
+func (p FPoint) Len() int {
 	return len(p)
 }
 
 // SqDist returns the squared distance between two points.
 func (p FPoint) SqDist(pnt Point) float64 {
 	n := len(p)
-	if n != pnt.Length() {
+	if n != pnt.Len() {
 		panic("dimension mismatch")
 	}
 

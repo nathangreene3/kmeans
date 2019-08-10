@@ -6,6 +6,6 @@ type Point interface {
 	CompareTo(pnt Point) int
 	Copy() Point
 	Dist(pnt Point) float64
-	Length() int
+	Len() int
 	SqDist(pnt Point) float64
 }

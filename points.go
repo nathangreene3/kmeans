@@ -50,13 +50,13 @@ func (ps Points) validate() {
 	// TODO: Make real errors instead of panicing.
 
 	if n := len(ps); 0 < n {
-		d := ps[0].Length()
+		d := ps[0].Len()
 		if d == 0 {
 			panic("dimensionless point")
 		}
 
 		for i := 1; i < n; i++ {
-			if d != ps[i].Length() {
+			if d != ps[i].Len() {
 				panic("dimension mismatch")
 			}
 		}
