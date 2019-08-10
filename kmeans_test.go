@@ -178,13 +178,13 @@ func mapToPoints(m map[string]Points) Points {
 		n += len(p)
 	}
 
-	ps := make(Points, 0, n)
+	points := make(Points, 0, n)
 	for _, p := range m {
-		ps = append(ps, p...)
+		points = append(points, p...)
 	}
 
-	ps.Sort()
-	return ps
+	points.Sort()
+	return points
 }
 
 // TestModel tests a small set of points.
@@ -228,12 +228,12 @@ func TestSepals(t *testing.T) {
 
 	// Get the assignment of the species means and verify each flower in each species is assigned to the correct cluster
 	var (
-		pnts        = mapToPoints(species)
-		mdl         = New(len(species), pnts)
+		points      = mapToPoints(species)
+		model       = New(len(species), points)
 		assignments = map[string]int{
-			"setosa":     mdl.Assignment(species["setosa"].ToCluster().Mean()),
-			"versicolor": mdl.Assignment(species["versicolor"].ToCluster().Mean()),
-			"virginica":  mdl.Assignment(species["virginica"].ToCluster().Mean()),
+			"setosa":     model.Assignment(species["setosa"].ToCluster().Mean()),
+			"versicolor": model.Assignment(species["versicolor"].ToCluster().Mean()),
+			"virginica":  model.Assignment(species["virginica"].ToCluster().Mean()),
 		}
 	)
 
@@ -253,8 +253,8 @@ func TestSepals(t *testing.T) {
 		correct       float64
 	)
 
-	for _, p := range pnts {
-		switch mdl.Assignment(p) {
+	for _, p := range points {
+		switch model.Assignment(p) {
 		case assignments["setosa"]:
 			if sort.Search(numSetosa, func(j int) bool { return p.CompareTo(species["setosa"][j]) <= 0 }) < numSetosa {
 				correct++

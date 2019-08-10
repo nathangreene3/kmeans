@@ -10,12 +10,12 @@ type Points []Point
 
 // Copy returns a copy of a set of points.
 func (ps Points) Copy() Points {
-	cpy := make(Points, 0, len(ps))
+	points := make(Points, 0, len(ps))
 	for i := range ps {
-		cpy = append(cpy, ps[i].Copy())
+		points = append(points, ps[i].Copy())
 	}
 
-	return cpy
+	return points
 }
 
 // Random returns a Random point from a set of points.
@@ -37,12 +37,12 @@ func (ps Points) Sort() {
 
 // ToCluster returns a cluster converted from a set of points.
 func (ps Points) ToCluster() Cluster {
-	c := make(Cluster, 0, len(ps))
+	cluster := make(Cluster, 0, len(ps))
 	for _, p := range ps {
-		c = append(c, p.Copy())
+		cluster = append(cluster, p.Copy())
 	}
 
-	return c
+	return cluster
 }
 
 // validate panics if there are no points or if any points are of unequal or zero dimension.

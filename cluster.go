@@ -9,8 +9,8 @@ import (
 type Cluster Points
 
 // CompareTo returns -1, 0, or 1 indicating cluster c precedes, is equal to, or follows another cluster.
-func (c Cluster) CompareTo(clstr Cluster) int {
-	m, n := len(c), len(clstr)
+func (c Cluster) CompareTo(cluster Cluster) int {
+	m, n := len(c), len(cluster)
 	switch {
 	case m == 0:
 		if n == 0 {
@@ -24,7 +24,7 @@ func (c Cluster) CompareTo(clstr Cluster) int {
 	maxIndex := min(m, n)
 	var comparison int
 	for i := 0; i < maxIndex; i++ {
-		if comparison = c[i].CompareTo(clstr[i]); comparison != 0 {
+		if comparison = c[i].CompareTo(cluster[i]); comparison != 0 {
 			return comparison
 		}
 	}
@@ -41,12 +41,12 @@ func (c Cluster) CompareTo(clstr Cluster) int {
 
 // Copy a cluster.
 func (c Cluster) Copy() Cluster {
-	cpy := make(Cluster, 0, len(c))
+	cluster := make(Cluster, 0, len(c))
 	for _, p := range c {
-		cpy = append(cpy, p.Copy())
+		cluster = append(cluster, p.Copy())
 	}
 
-	return cpy
+	return cluster
 }
 
 // Mean returns a point representing the mean (center) of the cluster.
@@ -60,24 +60,24 @@ func (c Cluster) Mean() Point {
 	}
 
 	var (
-		mn    Point
-		mnVar = math.MaxFloat64
-		v     float64
+		mean         Point
+		meanVariance = math.MaxFloat64
+		variance     float64
 	)
 
 	for _, p := range c {
-		if v = c.Variance(p); v < mnVar {
-			mn = p
-			mnVar = v
+		if variance = c.Variance(p); variance < meanVariance {
+			mean = p
+			meanVariance = variance
 		}
 	}
 
-	return mn
+	return mean
 }
 
 // Sort a cluster by a sorting option.
-func (c Cluster) Sort(st SortOpt) {
-	switch st {
+func (c Cluster) Sort(sortOpt SortOpt) {
+	switch sortOpt {
 	case VarSort:
 		if mn := c.Mean(); mn != nil {
 			sort.SliceStable(c, func(i, j int) bool { return mn.SqDist(c[i]) < mn.SqDist(c[j]) })
@@ -114,12 +114,12 @@ func (c Cluster) Variance(mean Point) float64 {
 }
 
 // Transfer ith point from the source cluster to the destination cluster. Returns (dest, src).
-func Transfer(i int, dest, src Cluster) (Cluster, Cluster) {
-	dest = append(dest, src[i])
-	dest.Sort(VarSort)
-	if i+1 < len(src) {
-		return dest, append(src[:i], src[i+1:]...)
+func Transfer(i int, destination, source Cluster) (Cluster, Cluster) {
+	destination = append(destination, source[i])
+	destination.Sort(VarSort)
+	if i+1 < len(source) {
+		return destination, append(source[:i], source[i+1:]...)
 	}
 
-	return dest, src[:i]
+	return destination, source[:i]
 }

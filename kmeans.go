@@ -9,32 +9,32 @@ import (
 
 // Model holds k-means clusters and their meta data.
 type Model struct {
-	k         int       // Number of clusters
-	clusters  Clusters  // Clusters returned from k-means
-	means     Points    // Means of clusters
-	variances []float64 // Variances of clusters
+	k         int
+	clusters  Clusters
+	means     Points
+	variances []float64
 }
 
 // New returns a trained k-means model.
 func New(k int, ps Points) *Model {
 	var (
-		mdl                     = &Model{}
+		model                   = &Model{}
 		meanWeightedVariance    float64
 		minMeanWeightedVariance = math.MaxFloat64
 		minClusters             Clusters
 	)
 
 	for i := 0; i < 5; i++ {
-		mdl.Train(k, ps)
-		if meanWeightedVariance = mdl.MeanWeightedVariance(); meanWeightedVariance < minMeanWeightedVariance {
-			minClusters = mdl.clusters
+		model.Train(k, ps)
+		if meanWeightedVariance = model.MeanWeightedVariance(); meanWeightedVariance < minMeanWeightedVariance {
+			minClusters = model.clusters
 			minMeanWeightedVariance = meanWeightedVariance
 		}
 	}
 
-	mdl.clusters = minClusters
-	mdl.update()
-	return mdl
+	model.clusters = minClusters
+	model.update()
+	return model
 }
 
 // Assignment returns the index of the cluster a point belongs to.
@@ -141,9 +141,9 @@ func (mdl *Model) Train(k int, ps Points) {
 
 	// Move points to their nearest cluster until they no longer move with each pass (indicated by the changed boolean).
 	var (
-		changed   = true  // Indicates if a cluster was altered
-		minIndex  int     // Index of cluster having smallest squared distance to a point
-		sd, minSD float64 // Squared distance; minimum squared distance
+		changed           = true
+		minIndex          int // Index of cluster having smallest squared distance to a point
+		sqDist, minSqDist float64
 	)
 
 	for changed {
@@ -162,16 +162,16 @@ func (mdl *Model) Train(k int, ps Points) {
 			for i := 0; i < len(mdl.clusters[h]); i++ {
 				// Find the index of the cluster closest to point i in cluster h.
 				minIndex = h
-				minSD = mdl.means[h].SqDist(mdl.clusters[h][i])
+				minSqDist = mdl.means[h].SqDist(mdl.clusters[h][i])
 				for j := range mdl.clusters {
 					if h == j {
 						// If h = j, then we are comparing the same cluster. If the size of cluster j is zero, then, obviously, there's no points to compare.
 						continue
 					}
 
-					sd = mdl.means[j].SqDist(mdl.clusters[h][i])
-					if sd < minSD {
-						minSD = sd
+					sqDist = mdl.means[j].SqDist(mdl.clusters[h][i])
+					if sqDist < minSqDist {
+						minSqDist = sqDist
 						minIndex = j
 					}
 				}
@@ -202,7 +202,7 @@ func (mdl *Model) Variance(i int) float64 {
 
 // Variances returns a copy of the variances of the clustes.
 func (mdl *Model) Variances() []float64 {
-	cpy := make([]float64, 0, len(mdl.variances))
-	copy(cpy, mdl.variances)
-	return cpy
+	variances := make([]float64, len(mdl.variances))
+	copy(variances, mdl.variances)
+	return variances
 }

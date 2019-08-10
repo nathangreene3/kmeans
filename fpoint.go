@@ -11,17 +11,17 @@ func (p FPoint) At(i int) float64 {
 }
 
 // CompareTo returns -1, 0, or 1 indicating point 0 precedes, is equal to, or follows point 1.
-func (p FPoint) CompareTo(q Point) int {
+func (p FPoint) CompareTo(point Point) int {
 	n := len(p)
-	if n != q.Len() {
+	if n != point.Len() {
 		panic("dimension mismatch")
 	}
 
 	for i := 0; i < n; i++ {
 		switch {
-		case p[i] < q.At(i):
+		case p[i] < point.At(i):
 			return -1
-		case q.At(i) < p[i]:
+		case point.At(i) < p[i]:
 			return 1
 		}
 	}
@@ -31,17 +31,17 @@ func (p FPoint) CompareTo(q Point) int {
 
 // Copy a point.
 func (p FPoint) Copy() Point {
-	cpy := make(FPoint, len(p))
-	copy(cpy, p)
-	return cpy
+	point := make(FPoint, len(p))
+	copy(point, p)
+	return point
 }
 
 // Dist returns the Euclidean Dist between two points.
-func (p FPoint) Dist(pnt Point) float64 {
-	return math.Sqrt(p.SqDist(pnt))
+func (p FPoint) Dist(point Point) float64 {
+	return math.Sqrt(p.SqDist(point))
 }
 
-// Length returns the number of dimensions of a point.
+// Len returns the number of dimensions of a point.
 func (p FPoint) Len() int {
 	return len(p)
 }
@@ -53,11 +53,11 @@ func (p FPoint) SqDist(pnt Point) float64 {
 		panic("dimension mismatch")
 	}
 
-	var sd, d float64 // Squared distance, Difference in each dimension
+	var sqDist, diffAt float64
 	for i := 0; i < n; i++ {
-		d = p[i] - pnt.At(i)
-		sd += d * d
+		diffAt = p[i] - pnt.At(i)
+		sqDist += diffAt * diffAt
 	}
 
-	return sd
+	return sqDist
 }
