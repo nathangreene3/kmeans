@@ -41,13 +41,13 @@ func New(k int, points Points) *Model {
 func (mdl *Model) Assignment(point Point) int {
 	var (
 		assignment int
-		sqDist     float64
-		minSqDist  = math.MaxFloat64
+		dist       float64
+		minDist    = math.MaxFloat64
 	)
 
 	for i := range mdl.means {
-		if sqDist = point.Dist(mdl.means[i]); sqDist < minSqDist {
-			minSqDist = sqDist
+		if dist = point.Dist(mdl.means[i]); dist < minDist {
+			minDist = dist
 			assignment = i
 		}
 	}
