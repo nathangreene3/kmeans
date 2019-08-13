@@ -51,8 +51,7 @@ func (c Cluster) Copy() Cluster {
 
 // Mean returns a point representing the mean (center) of the cluster.
 func (c Cluster) Mean() Point {
-	n := float64(len(c))
-	switch n {
+	switch len(c) {
 	case 0:
 		return nil
 	case 1:
