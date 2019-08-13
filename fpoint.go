@@ -2,7 +2,7 @@ package kmeans
 
 import "math"
 
-// FPoint is an n-dimensional point in n-space.
+// FPoint is an n-dimensional point in n-space. It implements the k-means point interface.
 type FPoint []float64
 
 // At returns the ith value.
@@ -38,26 +38,21 @@ func (p FPoint) Copy() Point {
 
 // Dist returns the Euclidean Dist between two points.
 func (p FPoint) Dist(point Point) float64 {
-	return math.Sqrt(p.SqDist(point))
-}
-
-// Len returns the number of dimensions of a point.
-func (p FPoint) Len() int {
-	return len(p)
-}
-
-// SqDist returns the squared distance between two points.
-func (p FPoint) SqDist(pnt Point) float64 {
 	n := len(p)
-	if n != pnt.Len() {
+	if n != point.Len() {
 		panic("dimension mismatch")
 	}
 
 	var sqDist, diffAt float64
 	for i := 0; i < n; i++ {
-		diffAt = p[i] - pnt.At(i)
+		diffAt = p[i] - point.At(i)
 		sqDist += diffAt * diffAt
 	}
 
-	return sqDist
+	return math.Sqrt(sqDist)
+}
+
+// Len returns the number of dimensions of a point.
+func (p FPoint) Len() int {
+	return len(p)
 }

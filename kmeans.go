@@ -46,7 +46,7 @@ func (mdl *Model) Assignment(point Point) int {
 	)
 
 	for i := range mdl.means {
-		if sqDist = point.SqDist(mdl.means[i]); sqDist < minSqDist {
+		if sqDist = point.Dist(mdl.means[i]); sqDist < minSqDist {
 			minSqDist = sqDist
 			assignment = i
 		}
@@ -162,14 +162,14 @@ func (mdl *Model) Train(k int, points Points) {
 			for i := 0; i < len(mdl.clusters[h]); i++ {
 				// Find the index of the cluster closest to point i in cluster h.
 				minIndex = h
-				minSqDist = mdl.means[h].SqDist(mdl.clusters[h][i])
+				minSqDist = mdl.means[h].Dist(mdl.clusters[h][i])
 				for j := range mdl.clusters {
 					if h == j {
 						// If h = j, then we are comparing the same cluster. If the size of cluster j is zero, then, obviously, there's no points to compare.
 						continue
 					}
 
-					sqDist = mdl.means[j].SqDist(mdl.clusters[h][i])
+					sqDist = mdl.means[j].Dist(mdl.clusters[h][i])
 					if sqDist < minSqDist {
 						minSqDist = sqDist
 						minIndex = j

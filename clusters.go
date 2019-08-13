@@ -59,7 +59,6 @@ func (cs Clusters) Join() Cluster {
 
 	joinedCluster := make(Cluster, 0, n)
 	for _, c := range cs {
-		n = len(c)
 		joinedCluster = append(joinedCluster, c...)
 	}
 

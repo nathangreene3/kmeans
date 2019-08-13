@@ -19,6 +19,5 @@ type Point interface {
     Copy() Point
     Dist(p Point) float64
     Len() int
-    SqDist(p Point) float64
 }
 ```
