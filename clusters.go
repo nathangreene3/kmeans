@@ -5,7 +5,9 @@ import "sort"
 // Clusters is a set of clusters.
 type Clusters []Cluster
 
-// Coalesce ensures clusters containing equivalent points are placed in one cluster. For each cluster i, the points in each cluster j are compared and equivalent points are moved to cluster i.
+// Coalesce ensures clusters containing equivalent points are placed in one
+// cluster. For each cluster i, the points in each cluster j are compared and
+// equivalent points are moved to cluster i.
 func (cs Clusters) Coalesce() {
 	cs.SortAll(SortByVariance)
 
@@ -19,7 +21,9 @@ func (cs Clusters) Coalesce() {
 		n = len(cs[i])
 		for j := 0; j < n; j++ {
 			if j+1 < n && cs[i][j].CompareTo(cs[i][j+1]) == 0 {
-				continue // Points j and j+1 are equal, so keep iterating until the last equal point is found.
+				// Points j and j+1 are equal, so keep iterating until the last
+				// equal point is found.
+				continue
 			}
 
 			for k := i + 1; k < m; k++ {
@@ -66,7 +70,8 @@ func (cs Clusters) Join() Cluster {
 	return joinedCluster
 }
 
-// Means returns the set of points each representing the mean (center) of each cluster.
+// Means returns the set of points each representing the mean (center) of each
+// cluster.
 func (cs Clusters) Means() Points {
 	means := make(Points, 0, len(cs))
 	for _, c := range cs {
@@ -86,7 +91,8 @@ func (cs Clusters) MeanVariance() float64 {
 	return v / float64(len(cs))
 }
 
-// MeanWeightedVariance returns the mean of the variances weighted by the number of points in each cluster.
+// MeanWeightedVariance returns the mean of the variances weighted by the number
+// of points in each cluster.
 func (cs Clusters) MeanWeightedVariance() float64 {
 	var (
 		n float64 // Number of points in clusters

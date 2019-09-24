@@ -1,14 +1,17 @@
 package kmeans
 
 import (
-	"math"
+	gomath "math"
 	"sort"
+
+	"github.com/nathangreene3/math"
 )
 
 // Cluster is a set of points.
 type Cluster Points
 
-// CompareTo returns -1, 0, or 1 indicating cluster c precedes, is equal to, or follows another cluster.
+// CompareTo returns -1, 0, or 1 indicating cluster c precedes, is equal to, or
+// follows another cluster.
 func (c Cluster) CompareTo(cluster Cluster) int {
 	m, n := len(c), len(cluster)
 	switch {
@@ -21,8 +24,11 @@ func (c Cluster) CompareTo(cluster Cluster) int {
 		return 1
 	}
 
-	maxIndex := min(m, n)
-	var comparison int
+	var (
+		maxIndex   = math.MinInt(m, n)
+		comparison int
+	)
+
 	for i := 0; i < maxIndex; i++ {
 		if comparison = c[i].CompareTo(cluster[i]); comparison != 0 {
 			return comparison
@@ -33,7 +39,7 @@ func (c Cluster) CompareTo(cluster Cluster) int {
 	case m < n:
 		return -1 // c is shorter (while equal over the range [0,m))
 	case n < m:
-		return 1 // clstr is shorter (while equal over the range [0,n))
+		return 1 // clustr is shorter (while equal over the range [0,n))
 	default:
 		return 0 // c and clster are equal in length and in each point
 	}
@@ -60,7 +66,7 @@ func (c Cluster) Mean() Point {
 
 	var (
 		mean         Point
-		meanVariance = math.MaxFloat64
+		meanVariance = gomath.MaxFloat64
 		variance     float64
 	)
 
@@ -103,7 +109,8 @@ func (c Cluster) Variance(mean Point) float64 {
 		return 0
 	}
 
-	// The variance is the sum of the squared Euclidean distances, divided by the number of points minus one.
+	// The variance is the sum of the squared Euclidean distances, divided by
+	// the number of points minus one.
 	var v float64
 	for _, p := range c {
 		v += mean.Dist(p)
@@ -112,7 +119,8 @@ func (c Cluster) Variance(mean Point) float64 {
 	return v / float64(n-1)
 }
 
-// Transfer ith point from the source cluster to the destination cluster. Returns (dest, src).
+// Transfer ith point from the source cluster to the destination cluster.
+// Returns (dest, src).
 func Transfer(i int, destination, source Cluster) (Cluster, Cluster) {
 	destination = append(destination, source[i])
 	destination.Sort(SortByVariance)

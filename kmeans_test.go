@@ -213,8 +213,8 @@ func TestModel(t *testing.T) {
 			sort.SliceStable(test.expectedClusters[h], func(i, j int) bool { return test.expectedClusters[h][i].CompareTo(test.expectedClusters[h][j]) < 0 })
 		}
 
-		for i := range mdl.clusters {
-			if test.expectedClusters[i].CompareTo(mdl.clusters[i]) != 0 {
+		for i, c := range mdl.clusters {
+			if test.expectedClusters[i].CompareTo(c) != 0 {
 				t.Fatalf("Expected: %0.2f\nReceived: %0.2f\nMeans: %0.2f\n", test.expectedClusters, mdl.clusters, mdl.clusters.Means())
 			}
 		}
@@ -226,7 +226,8 @@ func TestSepals(t *testing.T) {
 	// Sort so species can be searched.
 	sortMap(species)
 
-	// Get the assignment of the species means and verify each flower in each species is assigned to the correct cluster
+	// Get the assignment of the species means and verify each flower in each
+	// species is assigned to the correct cluster
 	var (
 		points      = mapToPoints(species)
 		model       = New(len(species), points)
@@ -272,59 +273,5 @@ func TestSepals(t *testing.T) {
 
 	if correct < 100 {
 		t.Fatalf("k-means model trained and was correct only %0.2f%% of the time", correct)
-	}
-}
-
-// TestMaxPow tests the maxPow function.
-func TestMaxPow(t *testing.T) {
-	tests := []struct {
-		b        int
-		n        int
-		expected int
-		actual   int
-	}{
-		{
-			b:        10,
-			n:        0,
-			expected: 0,
-			actual:   0,
-		},
-		{
-			b:        10,
-			n:        1,
-			expected: 0,
-			actual:   0,
-		},
-		{
-			b:        10,
-			n:        9,
-			expected: 0,
-			actual:   0,
-		},
-		{
-			b:        10,
-			n:        10,
-			expected: 1,
-			actual:   0,
-		},
-		{
-			b:        10,
-			n:        11,
-			expected: 1,
-			actual:   0,
-		},
-		{
-			b:        2,
-			n:        7,
-			expected: 2,
-			actual:   0,
-		},
-	}
-
-	for _, test := range tests {
-		test.actual = maxPow(test.b, test.n)
-		if test.expected != test.actual {
-			t.Fatalf("expected: %d\nactual: %d\n", test.expected, test.actual)
-		}
 	}
 }

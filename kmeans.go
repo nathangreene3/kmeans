@@ -24,6 +24,7 @@ func New(k int, points Points) *Model {
 		minClusters             Clusters
 	)
 
+	// Number of training sessions is arbitrarily set to five.
 	for i := 0; i < 5; i++ {
 		model.Train(k, points)
 		if meanWeightedVariance = model.MeanWeightedVariance(); meanWeightedVariance < minMeanWeightedVariance {
@@ -45,8 +46,8 @@ func (mdl *Model) Assignment(point Point) int {
 		minDist    = math.MaxFloat64
 	)
 
-	for i := range mdl.means {
-		if dist = point.Dist(mdl.means[i]); dist < minDist {
+	for i, mn := range mdl.means {
+		if dist = point.Dist(mn); dist < minDist {
 			minDist = dist
 			assignment = i
 		}
@@ -55,7 +56,7 @@ func (mdl *Model) Assignment(point Point) int {
 	return assignment
 }
 
-// initClusters returns a set of k-sorted clusters.
+// initialize a set of clusters.
 func (mdl *Model) initialize(k int, ps Points) {
 	ps.validate()
 	ps.Shuffle()
@@ -63,7 +64,8 @@ func (mdl *Model) initialize(k int, ps Points) {
 	mdl.k = k
 	mdl.clusters = make(Clusters, 0, k)
 
-	// Each cluster contains capacity/k points. Remainders will be added to the last cluster (index k-1).
+	// Each cluster contains capacity/k points. Remainders will be added to the
+	// last cluster (index k-1).
 	var (
 		capacity = len(ps)      // Cluster capacity
 		length   = capacity / k // Cluster length, not including remainder
@@ -80,7 +82,9 @@ func (mdl *Model) initialize(k int, ps Points) {
 		mdl.clusters = append(mdl.clusters, cluster)
 	}
 
-	// The last cluster is potentially largest if k doesn't divide n evenly. The actual size is s + n mod k. For example, given 32 points on 5 clusters, the size would be 32/5 + 32 mod 5 = 8.
+	// The last cluster is potentially largest if k doesn't divide n evenly. The
+	// actual size is s + n mod k. For example, given 32 points on 5 clusters,
+	// the size would be 32/5 + 32 mod 5 = 8.
 	for ; h < capacity; h++ {
 		mdl.clusters[k-1] = append(mdl.clusters[k-1], ps[h])
 	}
@@ -104,12 +108,14 @@ func (mdl *Model) Means() Points {
 	return mdl.means.Copy()
 }
 
-// MeanWeightedVariance returns the mean of the variances weighted by the number of points in each cluster.
+// MeanWeightedVariance returns the mean of the variances weighted by the number
+// of points in each cluster.
 func (mdl *Model) MeanWeightedVariance() float64 {
 	return mdl.clusters.MeanWeightedVariance()
 }
 
-// PlotMeanWeightedVars returns a string representing a chart of the mean variances of several models over a range of k in [kMin, kMax].
+// PlotMeanWeightedVars returns a string representing a chart of the mean
+// variances of several models over a range of k in [kMin, kMax].
 func PlotMeanWeightedVars(kMin, kMax int, points Points) string {
 	if kMax < kMin {
 		kMin, kMax = kMax, kMin
@@ -130,16 +136,19 @@ func (mdl *Model) sort() {
 	mdl.update()
 }
 
-// sortAll sorts each cluster in a model. The order of the clusters is NOT sorted.
+// sortAll sorts each cluster in a model. The order of the clusters is NOT
+// sorted.
 func (mdl *Model) sortAll(sortOpt SortOption) {
 	mdl.clusters.SortAll(sortOpt)
 }
 
-// Train clusters a set of points into k groups. Potentially, clusters can be empty, so multiple attempts should be made.
+// Train clusters a set of points into k groups. Potentially, clusters can be
+// empty, so multiple attempts should be made.
 func (mdl *Model) Train(k int, points Points) {
 	mdl.initialize(k, points)
 
-	// Move points to their nearest cluster until they no longer move with each pass (indicated by the changed boolean).
+	// Move points to their nearest cluster until they no longer move with each
+	// pass (indicated by the changed boolean).
 	var (
 		changed           = true
 		minIndex          int // Index of cluster having smallest squared distance to a point
@@ -149,23 +158,32 @@ func (mdl *Model) Train(k int, points Points) {
 	for changed {
 		changed = false
 
-		// Update the means and variances. If any cluster is empty, its mean, which is nil, will be reassigned to be a random point on the space spanned by the maximum point.
+		// Update the means and variances. If any cluster is empty, its mean,
+		// which is nil, will be reassigned to be a random point on the space
+		// spanned by the maximum point.
 		mdl.update()
-		for i := range mdl.means {
-			if mdl.means[i] == nil {
-				points.Random()
+		for i, mn := range mdl.means {
+			if mn == nil {
+				mdl.means[i] = points.Random()
+				changed = true
 			}
 		}
 
 		for h := range mdl.clusters {
-			// Each cluster is sorted, so the most variant point is at index clstrs[h][sizes[h]-1]. When the point clstrs[h][i] variance is small enough to not move to another cluster, then we can move on to the next cluster and ignore the other points on the range [0,i). So, h counts down and halts early.
+			// Each cluster is sorted, so the most variant point is at index
+			// clstrs[h][sizes[h]-1]. When the point clstrs[h][i] variance is
+			// small enough to not move to another cluster, then we can move on
+			// to the next cluster and ignore the other points on the range
+			// [0,i). So, h counts down and halts early.
 			for i := 0; i < len(mdl.clusters[h]); i++ {
 				// Find the index of the cluster closest to point i in cluster h.
 				minIndex = h
 				minSqDist = mdl.means[h].Dist(mdl.clusters[h][i])
 				for j := range mdl.clusters {
 					if h == j {
-						// If h = j, then we are comparing the same cluster. If the size of cluster j is zero, then, obviously, there's no points to compare.
+						// If h = j, then we are comparing the same cluster. If
+						// the size of cluster j is zero, then, obviously,
+						// there's no points to compare.
 						continue
 					}
 
@@ -177,11 +195,13 @@ func (mdl *Model) Train(k int, points Points) {
 				}
 
 				if h == minIndex {
-					// Point i in cluster h is closest to cluster h, so we don't need to move it.
+					// Point i in cluster h is closest to cluster h, so we don't
+					// need to move it.
 					continue
 				}
 
-				// Move point i in cluster h to the nearest cluster and update sizes and changed.
+				// Move point i in cluster h to the nearest cluster and update
+				// sizes and changed.
 				mdl.clusters[minIndex], mdl.clusters[h] = Transfer(i, mdl.clusters[minIndex], mdl.clusters[h])
 				changed = true
 			}

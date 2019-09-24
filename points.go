@@ -11,8 +11,8 @@ type Points []Point
 // Copy returns a copy of a set of points.
 func (ps Points) Copy() Points {
 	points := make(Points, 0, len(ps))
-	for i := range ps {
-		points = append(points, ps[i].Copy())
+	for _, p := range ps {
+		points = append(points, p.Copy())
 	}
 
 	return points
@@ -45,7 +45,8 @@ func (ps Points) ToCluster() Cluster {
 	return cluster
 }
 
-// validate panics if there are no points or if any points are of unequal or zero dimension.
+// validate panics if there are no points or if any points are of unequal or
+// zero dimension.
 func (ps Points) validate() {
 	// TODO: Make real errors instead of panicing.
 
@@ -55,8 +56,8 @@ func (ps Points) validate() {
 			panic("dimensionless point")
 		}
 
-		for i := 1; i < n; i++ {
-			if d != ps[i].Len() {
+		for _, p := range ps[1:] {
+			if d != p.Len() {
 				panic("dimension mismatch")
 			}
 		}

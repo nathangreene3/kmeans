@@ -2,7 +2,8 @@ package kmeans
 
 import "math"
 
-// FPoint is an n-dimensional point in n-space. It implements the k-means point interface.
+// FPoint is an n-dimensional point in n-space. It implements the k-means point
+// interface.
 type FPoint []float64
 
 // At returns the ith value.
@@ -10,7 +11,8 @@ func (p FPoint) At(i int) float64 {
 	return p[i]
 }
 
-// CompareTo returns -1, 0, or 1 indicating point 0 precedes, is equal to, or follows point 1.
+// CompareTo returns -1, 0, or 1 indicating point 0 precedes, is equal to, or
+// follows point 1.
 func (p FPoint) CompareTo(point Point) int {
 	n := len(p)
 	if n != point.Len() {
