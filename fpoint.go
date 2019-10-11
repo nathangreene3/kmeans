@@ -11,9 +11,9 @@ func (p FPoint) At(i int) float64 {
 	return p[i]
 }
 
-// CompareTo returns -1, 0, or 1 indicating point 0 precedes, is equal to, or
+// Compare returns -1, 0, or 1 indicating point 0 precedes, is equal to, or
 // follows point 1.
-func (p FPoint) CompareTo(point Point) int {
+func (p FPoint) Compare(point Point) int {
 	n := len(p)
 	if n != point.Len() {
 		panic("dimension mismatch")

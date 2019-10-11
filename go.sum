@@ -4,4 +4,7 @@ github.com/nathangreene3/math v0.0.0-20190916014403-f8cd7a400823 h1:xo+TsGvafFqr
 github.com/nathangreene3/math v0.0.0-20190916014403-f8cd7a400823/go.mod h1:8N/fq0L+s7P1GRo6HZgRQdrWLwtLy3FHSDjKIhFo1kE=
 github.com/nathangreene3/math v0.0.0-20190923033330-45d3cabdd406 h1:Rk0L7DwFqx+Q4oezeJ/lBr3H2wcIjGavn1I+MBgyFNw=
 github.com/nathangreene3/math v0.0.0-20190923033330-45d3cabdd406/go.mod h1:oTWc2X7f31Ko+Idqh+YCg7T0KnK3RkGx3qtP/nYFin0=
+github.com/nathangreene3/math v0.0.0-20190925035329-baee60882fba h1:5Ri0oOrexyYTUZT20pqIgPK1/qiaFKuRYpyB+UPqXXM=
+github.com/nathangreene3/math v0.0.0-20190925035329-baee60882fba/go.mod h1:oTWc2X7f31Ko+Idqh+YCg7T0KnK3RkGx3qtP/nYFin0=
 github.com/nathangreene3/table v0.0.0-20190920025320-afc9626595eb/go.mod h1:/AKC6nWqJhoSJqVOclaDdWgJell3ezSF9AP0zET9Txs=
+github.com/nathangreene3/table v0.0.0-20190925125238-6a94482d3780/go.mod h1:VIQDPfii/L7Jv9uYas2aSQC6onoNv95PHQSfnu0ppNI=

@@ -15,7 +15,7 @@ Point is an interface to implement k-means upon data. The provided implementatio
 ```go
 type Point interface {
     At(i int) float64
-    CompareTo(p Point) int
+    Compare(p Point) int
     Copy() Point
     Dist(p Point) float64
     Len() int

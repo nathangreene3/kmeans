@@ -20,7 +20,7 @@ func (cs Clusters) Coalesce() {
 	for i := 0; i < m; i++ {
 		n = len(cs[i])
 		for j := 0; j < n; j++ {
-			if j+1 < n && cs[i][j].CompareTo(cs[i][j+1]) == 0 {
+			if j+1 < n && cs[i][j].Compare(cs[i][j+1]) == 0 {
 				// Points j and j+1 are equal, so keep iterating until the last
 				// equal point is found.
 				continue
@@ -28,7 +28,7 @@ func (cs Clusters) Coalesce() {
 
 			for k := i + 1; k < m; k++ {
 				for b := 0; b < len(cs[k]); b++ {
-					if c = cs[i][j].CompareTo(cs[k][b]); c == 0 {
+					if c = cs[i][j].Compare(cs[k][b]); c == 0 {
 						cs[i], cs[k] = Transfer(b, cs[i], cs[k])
 						continue
 					}
@@ -111,7 +111,7 @@ func (cs Clusters) MeanWeightedVariance() float64 {
 
 // Sort sorts a set of clusters.
 func (cs Clusters) Sort() {
-	sort.SliceStable(cs, func(i, j int) bool { return cs[i].CompareTo(cs[j]) < 0 })
+	sort.SliceStable(cs, func(i, j int) bool { return cs[i].Compare(cs[j]) < 0 })
 }
 
 // SortAll sorts each cluster. The set of clusters is NOT sorted.

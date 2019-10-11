@@ -10,9 +10,9 @@ import (
 // Cluster is a set of points.
 type Cluster Points
 
-// CompareTo returns -1, 0, or 1 indicating cluster c precedes, is equal to, or
+// Compare returns -1, 0, or 1 indicating cluster c precedes, is equal to, or
 // follows another cluster.
-func (c Cluster) CompareTo(cluster Cluster) int {
+func (c Cluster) Compare(cluster Cluster) int {
 	m, n := len(c), len(cluster)
 	switch {
 	case m == 0:
@@ -30,7 +30,7 @@ func (c Cluster) CompareTo(cluster Cluster) int {
 	)
 
 	for i := 0; i < maxIndex; i++ {
-		if comparison = c[i].CompareTo(cluster[i]); comparison != 0 {
+		if comparison = c[i].Compare(cluster[i]); comparison != 0 {
 			return comparison
 		}
 	}
@@ -88,7 +88,7 @@ func (c Cluster) Sort(sortOpt SortOption) {
 			sort.SliceStable(c, func(i, j int) bool { return mean.Dist(c[i]) < mean.Dist(c[j]) })
 		}
 	case SortByDimension:
-		sort.SliceStable(c, func(i, j int) bool { return c[i].CompareTo(c[j]) < 0 })
+		sort.SliceStable(c, func(i, j int) bool { return c[i].Compare(c[j]) < 0 })
 	}
 }
 

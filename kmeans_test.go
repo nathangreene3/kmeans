@@ -208,13 +208,13 @@ func TestModel(t *testing.T) {
 		mdl := New(test.k, test.pnts)
 		mdl.sort()
 		mdl.sortAll(SortByDimension)
-		sort.SliceStable(test.expectedClusters, func(i, j int) bool { return test.expectedClusters[i].CompareTo(test.expectedClusters[j]) < 0 })
+		sort.SliceStable(test.expectedClusters, func(i, j int) bool { return test.expectedClusters[i].Compare(test.expectedClusters[j]) < 0 })
 		for h := range test.expectedClusters {
-			sort.SliceStable(test.expectedClusters[h], func(i, j int) bool { return test.expectedClusters[h][i].CompareTo(test.expectedClusters[h][j]) < 0 })
+			sort.SliceStable(test.expectedClusters[h], func(i, j int) bool { return test.expectedClusters[h][i].Compare(test.expectedClusters[h][j]) < 0 })
 		}
 
 		for i, c := range mdl.clusters {
-			if test.expectedClusters[i].CompareTo(c) != 0 {
+			if test.expectedClusters[i].Compare(c) != 0 {
 				t.Fatalf("Expected: %0.2f\nReceived: %0.2f\nMeans: %0.2f\n", test.expectedClusters, mdl.clusters, mdl.clusters.Means())
 			}
 		}
@@ -257,15 +257,15 @@ func TestSepals(t *testing.T) {
 	for _, p := range points {
 		switch model.Assignment(p) {
 		case assignments["setosa"]:
-			if sort.Search(numSetosa, func(j int) bool { return p.CompareTo(species["setosa"][j]) <= 0 }) < numSetosa {
+			if sort.Search(numSetosa, func(j int) bool { return p.Compare(species["setosa"][j]) <= 0 }) < numSetosa {
 				correct++
 			}
 		case assignments["versicolor"]:
-			if sort.Search(numVersicolor, func(j int) bool { return p.CompareTo(species["versicolor"][j]) <= 0 }) < numVersicolor {
+			if sort.Search(numVersicolor, func(j int) bool { return p.Compare(species["versicolor"][j]) <= 0 }) < numVersicolor {
 				correct++
 			}
 		case assignments["virginica"]:
-			if sort.Search(numVirginica, func(j int) bool { return p.CompareTo(species["virginica"][j]) <= 0 }) < numVirginica {
+			if sort.Search(numVirginica, func(j int) bool { return p.Compare(species["virginica"][j]) <= 0 }) < numVirginica {
 				correct++
 			}
 		}

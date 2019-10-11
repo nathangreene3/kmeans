@@ -32,7 +32,7 @@ func (ps Points) Shuffle() {
 
 // Sort a set of points given a sort option.
 func (ps Points) Sort() {
-	sort.Slice(ps, func(i, j int) bool { return ps[i].CompareTo(ps[j]) < 0 })
+	sort.Slice(ps, func(i, j int) bool { return ps[i].Compare(ps[j]) < 0 })
 }
 
 // ToCluster returns a cluster converted from a set of points.
