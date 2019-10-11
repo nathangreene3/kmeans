@@ -18,8 +18,7 @@ type Model struct {
 // New returns a trained k-means model.
 func New(k int, points Points) *Model {
 	var (
-		model                   = &Model{}
-		meanWeightedVariance    float64
+		model                   Model
 		minMeanWeightedVariance = math.MaxFloat64
 		minClusters             Clusters
 	)
@@ -27,7 +26,7 @@ func New(k int, points Points) *Model {
 	// Number of training sessions is arbitrarily set to five.
 	for i := 0; i < 5; i++ {
 		model.Train(k, points)
-		if meanWeightedVariance = model.MeanWeightedVariance(); meanWeightedVariance < minMeanWeightedVariance {
+		if meanWeightedVariance := model.MeanWeightedVariance(); meanWeightedVariance < minMeanWeightedVariance {
 			minClusters = model.clusters
 			minMeanWeightedVariance = meanWeightedVariance
 		}
@@ -35,19 +34,18 @@ func New(k int, points Points) *Model {
 
 	model.clusters = minClusters
 	model.update()
-	return model
+	return &model
 }
 
 // Assignment returns the index of the cluster a point belongs to.
 func (mdl *Model) Assignment(point Point) int {
 	var (
 		assignment int
-		dist       float64
 		minDist    = math.MaxFloat64
 	)
 
 	for i, mn := range mdl.means {
-		if dist = point.Dist(mn); dist < minDist {
+		if dist := point.Dist(mn); dist < minDist {
 			minDist = dist
 			assignment = i
 		}
@@ -149,13 +147,7 @@ func (mdl *Model) Train(k int, points Points) {
 
 	// Move points to their nearest cluster until they no longer move with each
 	// pass (indicated by the changed boolean).
-	var (
-		changed           = true
-		minIndex          int // Index of cluster having smallest squared distance to a point
-		sqDist, minSqDist float64
-	)
-
-	for changed {
+	for changed := true; changed; {
 		changed = false
 
 		// Update the means and variances. If any cluster is empty, its mean,
@@ -177,8 +169,8 @@ func (mdl *Model) Train(k int, points Points) {
 			// [0,i). So, h counts down and halts early.
 			for i := 0; i < len(mdl.clusters[h]); i++ {
 				// Find the index of the cluster closest to point i in cluster h.
-				minIndex = h
-				minSqDist = mdl.means[h].Dist(mdl.clusters[h][i])
+				minIndex := h
+				minSqDist := mdl.means[h].Dist(mdl.clusters[h][i])
 				for j := range mdl.clusters {
 					if h == j {
 						// If h = j, then we are comparing the same cluster. If
@@ -187,7 +179,7 @@ func (mdl *Model) Train(k int, points Points) {
 						continue
 					}
 
-					sqDist = mdl.means[j].Dist(mdl.clusters[h][i])
+					sqDist := mdl.means[j].Dist(mdl.clusters[h][i])
 					if sqDist < minSqDist {
 						minSqDist = sqDist
 						minIndex = j

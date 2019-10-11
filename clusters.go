@@ -11,14 +11,9 @@ type Clusters []Cluster
 func (cs Clusters) Coalesce() {
 	cs.SortAll(SortByVariance)
 
-	var (
-		m = len(cs)
-		n int // Number of points in cluster i
-		c int // Comparison result
-	)
-
+	m := len(cs)
 	for i := 0; i < m; i++ {
-		n = len(cs[i])
+		n := len(cs[i])
 		for j := 0; j < n; j++ {
 			if j+1 < n && cs[i][j].Compare(cs[i][j+1]) == 0 {
 				// Points j and j+1 are equal, so keep iterating until the last
@@ -28,7 +23,8 @@ func (cs Clusters) Coalesce() {
 
 			for k := i + 1; k < m; k++ {
 				for b := 0; b < len(cs[k]); b++ {
-					if c = cs[i][j].Compare(cs[k][b]); c == 0 {
+					c := cs[i][j].Compare(cs[k][b])
+					if c == 0 {
 						cs[i], cs[k] = Transfer(b, cs[i], cs[k])
 						continue
 					}
@@ -96,12 +92,11 @@ func (cs Clusters) MeanVariance() float64 {
 func (cs Clusters) MeanWeightedVariance() float64 {
 	var (
 		n float64 // Number of points in clusters
-		s float64 // Number of points in cluster i
 		v float64 // Sum of size-weighted variances
 	)
 
 	for _, c := range cs {
-		s = float64(len(c))
+		s := float64(len(c))
 		n += s
 		v += s * c.Variance(c.Mean())
 	}
