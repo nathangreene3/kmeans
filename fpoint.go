@@ -13,17 +13,27 @@ func (p FPoint) At(i int) float64 {
 
 // Compare returns -1, 0, or 1 indicating point 0 precedes, is equal to, or
 // follows point 1.
-func (p FPoint) Compare(point Point) int {
+func (p FPoint) Compare(x Interface) int {
+	switch {
+	case len(p) == 0:
+		if x == nil {
+			return 0
+		}
+		return 1
+	case x == nil:
+		return -1
+	}
+
 	n := len(p)
-	if n != point.Len() {
+	if n != x.Len() {
 		panic("dimension mismatch")
 	}
 
 	for i := 0; i < n; i++ {
 		switch {
-		case p[i] < point.At(i):
+		case p[i] < x.At(i):
 			return -1
-		case point.At(i) < p[i]:
+		case x.At(i) < p[i]:
 			return 1
 		}
 	}
@@ -32,22 +42,22 @@ func (p FPoint) Compare(point Point) int {
 }
 
 // Copy a point.
-func (p FPoint) Copy() Point {
+func (p FPoint) Copy() Interface {
 	point := make(FPoint, len(p))
 	copy(point, p)
 	return point
 }
 
 // Dist returns the Euclidean Dist between two points.
-func (p FPoint) Dist(point Point) float64 {
+func (p FPoint) Dist(x Interface) float64 {
 	n := len(p)
-	if n != point.Len() {
+	if n != x.Len() {
 		panic("dimension mismatch")
 	}
 
 	var sqDist, diffAt float64
 	for i := 0; i < n; i++ {
-		diffAt = p[i] - point.At(i)
+		diffAt = p[i] - x.At(i)
 		sqDist += diffAt * diffAt
 	}
 

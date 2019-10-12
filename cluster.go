@@ -59,7 +59,7 @@ func (c Cluster) Copy() Cluster {
 func (c Cluster) Mean() Point {
 	switch len(c) {
 	case 0:
-		return nil
+		return Zero()
 	case 1:
 		return c[0].Copy()
 	}
@@ -84,7 +84,7 @@ func (c Cluster) Mean() Point {
 func (c Cluster) Sort(sortOpt SortOption) {
 	switch sortOpt {
 	case SortByVariance:
-		if mean := c.Mean(); mean != nil {
+		if mean := c.Mean(); mean.Compare(Zero()) != 0 {
 			sort.SliceStable(c, func(i, j int) bool { return mean.Dist(c[i]) < mean.Dist(c[j]) })
 		}
 	case SortByDimension:

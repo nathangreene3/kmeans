@@ -147,6 +147,7 @@ func (mdl *Model) Train(k int, points Points) {
 
 	// Move points to their nearest cluster until they no longer move with each
 	// pass (indicated by the changed boolean).
+	z := Zero()
 	for changed := true; changed; {
 		changed = false
 
@@ -155,7 +156,7 @@ func (mdl *Model) Train(k int, points Points) {
 		// spanned by the maximum point.
 		mdl.update()
 		for i, mn := range mdl.means {
-			if mn == nil {
+			if mn.Compare(z) == 0 {
 				mdl.means[i] = points.Random()
 				changed = true
 			}
