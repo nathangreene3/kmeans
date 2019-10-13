@@ -73,6 +73,7 @@ func (c Cluster) Mean() Point {
 	for _, p := range c {
 		if variance = c.Variance(p); variance < meanVariance {
 			mean = p
+			mean.Relabel(nil)
 			meanVariance = variance
 		}
 	}

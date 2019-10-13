@@ -27,17 +27,17 @@ func Zero() Point {
 	return Point{}
 }
 
-// At ...
+// At returns the ith value.
 func (p *Point) At(i int) float64 {
 	return p.values.At(i)
 }
 
-// Compare ...
+// Compare two points.
 func (p *Point) Compare(q Point) int {
 	return p.values.Compare(q.values)
 }
 
-// Copy ...
+// Copy a point.
 func (p *Point) Copy() Point {
 	return NewPoint(p.label, p.values)
 }
@@ -45,6 +45,11 @@ func (p *Point) Copy() Point {
 // Dist ...
 func (p *Point) Dist(q Point) float64 {
 	return p.values.Dist(q.values)
+}
+
+// Relabel a point.
+func (p *Point) Relabel(label interface{}) {
+	p.label = label
 }
 
 // Len ...

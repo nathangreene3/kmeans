@@ -14,26 +14,25 @@ func (p FPoint) At(i int) float64 {
 // Compare returns -1, 0, or 1 indicating point 0 precedes, is equal to, or
 // follows point 1.
 func (p FPoint) Compare(x Interface) int {
+	n := len(p)
 	switch {
-	case len(p) == 0:
+	case n == 0:
 		if x == nil {
 			return 0
 		}
 		return 1
 	case x == nil:
 		return -1
-	}
-
-	n := len(p)
-	if n != x.Len() {
+	case n != x.Len():
 		panic("dimension mismatch")
 	}
 
 	for i := 0; i < n; i++ {
+		pi, xi := p[i], x.At(i)
 		switch {
-		case p[i] < x.At(i):
+		case pi < xi:
 			return -1
-		case x.At(i) < p[i]:
+		case xi < pi:
 			return 1
 		}
 	}
@@ -55,9 +54,9 @@ func (p FPoint) Dist(x Interface) float64 {
 		panic("dimension mismatch")
 	}
 
-	var sqDist, diffAt float64
+	var sqDist float64
 	for i := 0; i < n; i++ {
-		diffAt = p[i] - x.At(i)
+		diffAt := p[i] - x.At(i)
 		sqDist += diffAt * diffAt
 	}
 
