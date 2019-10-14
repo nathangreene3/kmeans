@@ -22,7 +22,7 @@ func NewPoint(label interface{}, x Interface) Point {
 	return Point{label: label, values: x.Copy()}
 }
 
-// Zero ...
+// Zero returns the zero-value of a point.
 func Zero() Point {
 	return Point{}
 }
@@ -42,7 +42,7 @@ func (p *Point) Copy() Point {
 	return NewPoint(p.label, p.values)
 }
 
-// Dist ...
+// Dist returns the distance between two points.
 func (p *Point) Dist(q Point) float64 {
 	return p.values.Dist(q.values)
 }
@@ -52,12 +52,12 @@ func (p *Point) Relabel(label interface{}) {
 	p.label = label
 }
 
-// Len ...
+// Len returns the length of a points values (dimensions).
 func (p *Point) Len() int {
 	return p.values.Len()
 }
 
-// String ...
+// String returns a formatted representation of a point.
 func (p *Point) String() string {
 	return fmt.Sprintf("{ %s, %s }", p.label, p.values)
 }

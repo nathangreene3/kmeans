@@ -24,13 +24,9 @@ func (c Cluster) Compare(cluster Cluster) int {
 		return 1
 	}
 
-	var (
-		maxIndex   = math.MinInt(m, n)
-		comparison int
-	)
-
-	for i := 0; i < maxIndex; i++ {
-		if comparison = c[i].Compare(cluster[i]); comparison != 0 {
+	shortLen := math.MinInt(m, n)
+	for i := 0; i < shortLen; i++ {
+		if comparison := c[i].Compare(cluster[i]); comparison != 0 {
 			return comparison
 		}
 	}
@@ -39,9 +35,9 @@ func (c Cluster) Compare(cluster Cluster) int {
 	case m < n:
 		return -1 // c is shorter (while equal over the range [0,m))
 	case n < m:
-		return 1 // clustr is shorter (while equal over the range [0,n))
+		return 1 // cluster is shorter (while equal over the range [0,n))
 	default:
-		return 0 // c and clster are equal in length and in each point
+		return 0 // c and cluster are equal in length and in each point
 	}
 }
 
@@ -113,10 +109,10 @@ func (c Cluster) Variance(point Point) float64 {
 	// the number of points minus one.
 	var v float64
 	for _, p := range c {
-		v += point.Dist(p)
+		v += gomath.Pow(p.Dist(point), 2) // Should this be squared?
 	}
 
-	return v / float64(n-1)
+	return gomath.Sqrt(v) / float64(n-1)
 }
 
 // Transfer ith point from the source cluster to the destination cluster.

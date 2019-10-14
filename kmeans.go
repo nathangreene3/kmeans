@@ -19,8 +19,8 @@ type Model struct {
 func New(k int, points Points) *Model {
 	var (
 		model                   Model
-		minMeanWeightedVariance = math.MaxFloat64
 		minClusters             Clusters
+		minMeanWeightedVariance = math.MaxFloat64
 	)
 
 	// Number of training sessions is arbitrarily set to five.
@@ -151,9 +151,7 @@ func (mdl *Model) Train(k int, points Points) {
 	for changed := true; changed; {
 		changed = false
 
-		// Update the means and variances. If any cluster is empty, its mean,
-		// which is nil, will be reassigned to be a random point on the space
-		// spanned by the maximum point.
+		// Ensure means are defined, even on empty clusters.
 		mdl.update()
 		for i, mn := range mdl.means {
 			if mn.Compare(z) == 0 {
@@ -162,41 +160,32 @@ func (mdl *Model) Train(k int, points Points) {
 			}
 		}
 
-		for h := range mdl.clusters {
-			// Each cluster is sorted, so the most variant point is at index
-			// clstrs[h][sizes[h]-1]. When the point clstrs[h][i] variance is
-			// small enough to not move to another cluster, then we can move on
-			// to the next cluster and ignore the other points on the range
-			// [0,i). So, h counts down and halts early.
+		// Update each cluster h.
+		for h := 0; h < mdl.k; h++ {
+			// Update cluster assignments for each point p in cluster h.
 			for i := 0; i < len(mdl.clusters[h]); i++ {
-				// Find the index of the cluster closest to point i in cluster h.
-				minIndex := h
-				minSqDist := mdl.means[h].Dist(mdl.clusters[h][i])
-				for j := range mdl.clusters {
-					if h == j {
-						// If h = j, then we are comparing the same cluster. If
-						// the size of cluster j is zero, then, obviously,
-						// there's no points to compare.
-						continue
-					}
+				// Find the index j of the cluster closest to point i that is in cluster h.
+				var (
+					p        = mdl.clusters[h][i]
+					minIndex = h
+					minDist  = mdl.means[h].Dist(p)
+				)
 
-					sqDist := mdl.means[j].Dist(mdl.clusters[h][i])
-					if sqDist < minSqDist {
-						minSqDist = sqDist
-						minIndex = j
+				for j, mn := range mdl.means {
+					if h != j {
+						if dist := mn.Dist(p); dist < minDist {
+							// Cluster j is closer to point i than its current cluster h.
+							minDist = dist
+							minIndex = j
+						}
 					}
 				}
 
-				if h == minIndex {
-					// Point i in cluster h is closest to cluster h, so we don't
-					// need to move it.
-					continue
+				if h != minIndex {
+					// Transfer point from cluster h to minIndex.
+					mdl.clusters[minIndex], mdl.clusters[h] = Transfer(i, mdl.clusters[minIndex], mdl.clusters[h])
+					changed = true
 				}
-
-				// Move point i in cluster h to the nearest cluster and update
-				// sizes and changed.
-				mdl.clusters[minIndex], mdl.clusters[h] = Transfer(i, mdl.clusters[minIndex], mdl.clusters[h])
-				changed = true
 			}
 		}
 	}
