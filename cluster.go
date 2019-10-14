@@ -65,20 +65,19 @@ func (c Cluster) Mean() Point {
 	}
 
 	var (
-		mean         Point
-		meanVariance = gomath.MaxFloat64
-		variance     float64
+		mn Point               // Mean of the cluster
+		mv = gomath.MaxFloat64 // Variance of the mean to the cluster; The mean has the smallest variance
 	)
 
 	for _, p := range c {
-		if variance = c.Variance(p); variance < meanVariance {
-			mean = p
-			mean.Relabel(nil)
-			meanVariance = variance
+		if v := c.Variance(p); v < mv {
+			mn = p
+			mn.Relabel(nil)
+			mv = v
 		}
 	}
 
-	return mean
+	return mn
 }
 
 // Sort a cluster by a sorting option.
@@ -86,10 +85,10 @@ func (c Cluster) Sort(sortOpt SortOption) {
 	switch sortOpt {
 	case SortByVariance:
 		if mean := c.Mean(); mean.Compare(Zero()) != 0 {
-			sort.SliceStable(c, func(i, j int) bool { return mean.Dist(c[i]) < mean.Dist(c[j]) })
+			sort.Slice(c, func(i, j int) bool { return mean.Dist(c[i]) < mean.Dist(c[j]) })
 		}
 	case SortByDimension:
-		sort.SliceStable(c, func(i, j int) bool { return c[i].Compare(c[j]) < 0 })
+		sort.Slice(c, func(i, j int) bool { return c[i].Compare(c[j]) < 0 })
 	}
 }
 
@@ -103,18 +102,18 @@ func (c Cluster) ToPoints() Points {
 	return points
 }
 
-// Variance returns the Variance of the cluster to the mean.
-func (c Cluster) Variance(mean Point) float64 {
+// Variance returns the Variance of the cluster to a point (usually the mean).
+func (c Cluster) Variance(point Point) float64 {
 	n := len(c)
 	if n < 2 {
 		return 0
 	}
 
-	// The variance is the sum of the squared Euclidean distances, divided by
+	// The variance is the sum of the distances, divided by
 	// the number of points minus one.
 	var v float64
 	for _, p := range c {
-		v += mean.Dist(p)
+		v += point.Dist(p)
 	}
 
 	return v / float64(n-1)
