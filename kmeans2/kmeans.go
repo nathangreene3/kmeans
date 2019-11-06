@@ -1,4 +1,4 @@
-package kmeans
+package kmeans2
 
 import (
 	"fmt"
@@ -9,17 +9,15 @@ import (
 
 // Model holds k-means clusters and their meta data.
 type Model struct {
-	k         int
-	clusters  Clusters
-	means     Points
-	variances []float64
+	k        int
+	clusters []Cluster
 }
 
 // New returns a trained k-means model.
 func New(k int, points Points) *Model {
 	var (
 		model                   Model
-		minClusters             Clusters
+		minClusters             []Cluster
 		minMeanWeightedVariance = math.MaxFloat64
 	)
 
@@ -44,8 +42,8 @@ func (mdl *Model) Assignment(point Point) int {
 		minDist    = math.MaxFloat64
 	)
 
-	for i, mn := range mdl.means {
-		if dist := point.Dist(mn); dist < minDist {
+	for i, clstr := range mdl.clusters {
+		if dist := point.Dist(clstr.mean); dist < minDist {
 			minDist = dist
 			assignment = i
 		}
@@ -60,7 +58,7 @@ func (mdl *Model) initialize(k int, ps Points) {
 	ps.Shuffle()
 
 	mdl.k = k
-	mdl.clusters = make(Clusters, 0, k)
+	mdl.clusters = make([]Cluster, 0, k)
 
 	// Each cluster contains capacity/k points. Remainders will be added to the
 	// last cluster (index k-1).
@@ -71,20 +69,14 @@ func (mdl *Model) initialize(k int, ps Points) {
 	)
 
 	for i := 0; i < k; i++ {
-		cluster := make(Cluster, 0, capacity)
-		for j := 0; j < length; j++ {
-			cluster = append(cluster, ps[h])
-			h++
-		}
-
-		mdl.clusters = append(mdl.clusters, cluster)
+		mdl.clusters = append(mdl.clusters, NewCluster(ps[h:h+length]))
 	}
 
 	// The last cluster is potentially largest if k doesn't divide n evenly. The
 	// actual size is s + n mod k. For example, given 32 points on 5 clusters,
 	// the size would be 32/5 + 32 mod 5 = 8.
 	for ; h < capacity; h++ {
-		mdl.clusters[k-1] = append(mdl.clusters[k-1], ps[h])
+		mdl.clusters[k-1].Append(ps[h])
 	}
 
 	mdl.clusters.Coalesce() // Sorts all
@@ -98,12 +90,17 @@ func (mdl *Model) K() int {
 
 // Mean returns the mean of cluster i.
 func (mdl *Model) Mean(i int) Point {
-	return mdl.means[i].Copy()
+	return mdl.clusters[i].mean.Copy()
 }
 
 // Means returns the mean points of the clusters.
 func (mdl *Model) Means() Points {
-	return mdl.means.Copy()
+	means := make(Points, 0, mdl.k)
+	for _, c := range mdl.clusters {
+		means = append(means, c.mean.Copy())
+	}
+
+	return means
 }
 
 // MeanWeightedVariance returns the mean of the variances weighted by the number
@@ -193,18 +190,22 @@ func (mdl *Model) Train(k int, points Points) {
 
 // update the means and variances.
 func (mdl *Model) update() {
-	mdl.means = mdl.clusters.Means()
-	mdl.variances = mdl.clusters.Variances()
+	for i := range mdl.clusters {
+		mdl.clusters[i].Update()
+	}
 }
 
 // Variance returns the variance of cluster i.
 func (mdl *Model) Variance(i int) float64 {
-	return mdl.variances[i]
+	return mdl.clusters[i].variance
 }
 
 // Variances returns a copy of the variances of the clusters.
 func (mdl *Model) Variances() []float64 {
-	variances := make([]float64, len(mdl.variances))
-	copy(variances, mdl.variances)
+	variances := make([]float64, 0, mdl.k)
+	for _, c := range mdl.clusters {
+		variances = append(variances, c.variance)
+	}
+
 	return variances
 }
