@@ -31,8 +31,12 @@ func (ps Points) Shuffle() {
 }
 
 // Sort a set of points.
-func (ps Points) Sort() {
-	sort.Slice(ps, func(i, j int) bool { return ps[i].Compare(ps[j]) < 0 })
+func (ps Points) Sort(stable bool) {
+	if stable {
+		sort.SliceStable(ps, func(i, j int) bool { return ps[i].Compare(ps[j]) < 0 })
+	} else {
+		sort.Slice(ps, func(i, j int) bool { return ps[i].Compare(ps[j]) < 0 })
+	}
 }
 
 // validate panics if there are no points or if any points are of unequal or
@@ -40,7 +44,7 @@ func (ps Points) Sort() {
 func (ps Points) validate() {
 	// TODO: Make real errors instead of panicing.
 
-	if n := len(ps); 0 < n {
+	if 0 < len(ps) {
 		d := ps[0].Len()
 		if d == 0 {
 			panic("dimensionless point")

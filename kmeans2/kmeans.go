@@ -7,31 +7,30 @@ import (
 	graph "github.com/guptarohit/asciigraph"
 )
 
-// Model holds k-means clusters and their meta data.
+// A Model holds k-means clusters.
 type Model struct {
 	k        int
-	clusters []Cluster
+	clusters Clusters
 }
 
 // New returns a trained k-means model.
 func New(k int, points Points) *Model {
 	var (
 		model                   Model
-		minClusters             []Cluster
-		minMeanWeightedVariance = math.MaxFloat64
+		minClusters             Clusters          // Clusters that have the smallest mean-weighted variance
+		minMeanWeightedVariance = math.MaxFloat64 // Smallest mean-weighted variance observed
 	)
 
 	// Number of training sessions is arbitrarily set to five.
 	for i := 0; i < 5; i++ {
 		model.Train(k, points)
 		if meanWeightedVariance := model.MeanWeightedVariance(); meanWeightedVariance < minMeanWeightedVariance {
-			minClusters = model.clusters
+			minClusters = model.clusters.Copy()
 			minMeanWeightedVariance = meanWeightedVariance
 		}
 	}
 
 	model.clusters = minClusters
-	model.update()
 	return &model
 }
 
@@ -42,9 +41,9 @@ func (mdl *Model) Assignment(point Point) int {
 		minDist    = math.MaxFloat64
 	)
 
-	for i, clstr := range mdl.clusters {
-		if dist := point.Dist(clstr.mean); dist < minDist {
-			minDist = dist
+	for i, c := range mdl.clusters {
+		if d := point.Dist(c.mean); d < minDist {
+			minDist = d
 			assignment = i
 		}
 	}
@@ -69,7 +68,7 @@ func (mdl *Model) initialize(k int, ps Points) {
 	)
 
 	for i := 0; i < k; i++ {
-		mdl.clusters = append(mdl.clusters, NewCluster(ps[h:h+length]))
+		mdl.clusters = append(mdl.clusters, NewCluster(ps[h:h+length]...))
 	}
 
 	// The last cluster is potentially largest if k doesn't divide n evenly. The
@@ -126,15 +125,15 @@ func PlotMeanWeightedVars(kMin, kMax int, points Points) string {
 }
 
 // sort clusters.
-func (mdl *Model) sort() {
-	mdl.clusters.Sort()
+func (mdl *Model) sort(stable bool) {
+	mdl.clusters.Sort(stable)
 	mdl.update()
 }
 
 // sortAll sorts each cluster in a model. The order of the clusters is NOT
 // sorted.
-func (mdl *Model) sortAll(sortOpt SortOption) {
-	mdl.clusters.SortAll(sortOpt)
+func (mdl *Model) sortAll(sortOpt SortOption, stable bool) {
+	mdl.clusters.SortAll(sortOpt, stable)
 }
 
 // Train clusters a set of points into k groups. Potentially, clusters can be
@@ -144,33 +143,34 @@ func (mdl *Model) Train(k int, points Points) {
 
 	// Move points to their nearest cluster until they no longer move with each
 	// pass (indicated by the changed boolean).
-	z := Zero()
+	var z Point
 	for changed := true; changed; {
 		changed = false
 
 		// Ensure means are defined, even on empty clusters.
 		mdl.update()
-		for i, mn := range mdl.means {
-			if mn.Compare(z) == 0 {
-				mdl.means[i] = points.Random()
+		for i, c := range mdl.clusters {
+			if c.mean.Compare(z) == 0 {
+				// c is empty, so it's mean will be a random point
+				mdl.clusters[i].mean = points.Random()
 				changed = true
 			}
 		}
 
 		// Update each cluster h.
-		for h := 0; h < mdl.k; h++ {
+		for h := range mdl.clusters {
 			// Update cluster assignments for each point p in cluster h.
-			for i := 0; i < len(mdl.clusters[h]); i++ {
+			for i := 0; i < mdl.clusters[h].size; i++ {
 				// Find the index j of the cluster closest to point i that is in cluster h.
 				var (
-					p        = mdl.clusters[h][i]
+					p        = mdl.clusters[h].points[i]
+					minDist  = mdl.clusters[h].mean.Dist(p)
 					minIndex = h
-					minDist  = mdl.means[h].Dist(p)
 				)
 
-				for j, mn := range mdl.means {
+				for j, c := range mdl.clusters {
 					if h != j {
-						if dist := mn.Dist(p); dist < minDist {
+						if dist := c.mean.Dist(p); dist < minDist {
 							// Cluster j is closer to point i than its current cluster h.
 							minDist = dist
 							minIndex = j
@@ -180,7 +180,7 @@ func (mdl *Model) Train(k int, points Points) {
 
 				if h != minIndex {
 					// Transfer point from cluster h to minIndex.
-					mdl.clusters[minIndex], mdl.clusters[h] = Transfer(i, mdl.clusters[minIndex], mdl.clusters[h])
+					mdl.clusters[h].transfer(i, &mdl.clusters[minIndex])
 					changed = true
 				}
 			}

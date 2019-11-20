@@ -1,4 +1,4 @@
-package kmeans
+package kmeans2
 
 import (
 	"sort"
@@ -164,10 +164,10 @@ var species = map[string]Points{
 	},
 }
 
-// sortMap sorts each point set in the map.
-func sortMap(m map[string]Points) {
+// sortAll sorts each point set in the map.
+func sortAll(m map[string]Points) {
 	for _, p := range m {
-		p.Sort()
+		p.Sort(false)
 	}
 }
 
@@ -183,62 +183,14 @@ func mapToPoints(m map[string]Points) Points {
 		points = append(points, p...)
 	}
 
-	points.Sort()
+	points.Sort(false)
 	return points
-}
-
-// TestModel tests a small set of points.
-func TestModel(t *testing.T) {
-	tests := []struct {
-		k                int
-		pnts             Points
-		expectedClusters Clusters
-	}{
-		{
-			k: 2,
-			pnts: Points{
-				NewPoint("A", FPoint{1, 1}),
-				NewPoint("B", FPoint{2, 1}),
-				NewPoint("C", FPoint{3, 3}),
-				NewPoint("D", FPoint{4, 2}),
-				NewPoint("E", FPoint{4, 3}),
-			},
-			expectedClusters: Clusters{
-				Cluster{
-					NewPoint("A", FPoint{1, 1}),
-					NewPoint("B", FPoint{2, 1}),
-				},
-				Cluster{
-					NewPoint("C", FPoint{3, 3}),
-					NewPoint("D", FPoint{4, 2}),
-					NewPoint("E", FPoint{4, 3}),
-				},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		mdl := New(test.k, test.pnts)
-		mdl.sort()
-		mdl.sortAll(SortByDimension)
-		// sort.SliceStable(test.expectedClusters, func(i, j int) bool { return test.expectedClusters[i].Compare(test.expectedClusters[j]) < 0 })
-		test.expectedClusters.Sort()
-		for h := range test.expectedClusters {
-			sort.SliceStable(test.expectedClusters[h], func(i, j int) bool { return test.expectedClusters[h][i].Compare(test.expectedClusters[h][j]) < 0 })
-		}
-
-		for i, c := range mdl.clusters {
-			if test.expectedClusters[i].Compare(c) != 0 {
-				t.Fatalf("Expected: %0.2f\nReceived: %0.2f\nMeans: %0.2f\n", test.expectedClusters, mdl.clusters, mdl.clusters.Means())
-			}
-		}
-	}
 }
 
 // TestSepals tests the classic sepal data set.
 func TestSepals(t *testing.T) {
 	// Sort so species can be searched.
-	sortMap(species)
+	sortAll(species)
 
 	// Get the assignment of the species means and verify each flower in each
 	// species is assigned to the correct cluster
@@ -246,9 +198,9 @@ func TestSepals(t *testing.T) {
 		points      = mapToPoints(species)
 		model       = New(len(species), points)
 		assignments = map[string]int{
-			"setosa":     model.Assignment(species["setosa"].ToCluster().Mean()),
-			"versicolor": model.Assignment(species["versicolor"].ToCluster().Mean()),
-			"virginica":  model.Assignment(species["virginica"].ToCluster().Mean()),
+			"setosa":     model.Assignment(NewCluster(species["setosa"]...).mean),
+			"versicolor": model.Assignment(NewCluster(species["versicolor"]...).mean),
+			"virginica":  model.Assignment(NewCluster(species["virginica"]...).mean),
 		}
 	)
 
@@ -293,7 +245,7 @@ func TestSepals(t *testing.T) {
 func BenchmarkSepals(b *testing.B) {
 	// BenchmarkSepals-4	10	152410910 ns/op	186016 B/op	1993 allocs/op
 	// BenchmarkSepals-4	10	151813080 ns/op	186787 B/op	2010 allocs/op
-	sortMap(species)
+	sortAll(species)
 	for i := 0; i < b.N; i++ {
 		_ = New(len(species), mapToPoints(species))
 	}

@@ -11,61 +11,22 @@ type Cluster struct {
 }
 
 // NewCluster ...
-func NewCluster(points Points) Cluster {
-	c := Cluster{
-		points: points.Copy(),
-		size:   len(points),
-	}
+func NewCluster(points ...Point) Cluster {
+	n := len(points)
+	c := Cluster{points: make(Points, n), size: n}
 
-	c.points.Sort()
+	copy(c.points, points)
+	c.points.Sort(false)
 	c.Update()
 	return c
 }
 
-// Append ...
+// Append a point to a cluster.
 func (c *Cluster) Append(point Point) {
 	c.points = append(c.points, point)
-	c.points.Sort()
+	c.points.Sort(true)
 	c.size++
 	c.Update()
-}
-
-// Clusters ...
-type Clusters []Cluster
-
-// Coalesce ensures clusters containing equivalent points are placed in one
-// cluster. For each cluster i, the points in each cluster j are compared and
-// equivalent points are moved to cluster i.
-func (cs Clusters) Coalesce() {
-	cs.SortAll(SortByVariance)
-
-	m := len(cs)
-	for i := 0; i < m; i++ {
-		n := len(cs[i])
-		for j := 0; j < n; j++ {
-			if j+1 < n && cs[i][j].Compare(cs[i][j+1]) == 0 {
-				// Points j and j+1 are equal, so keep iterating until the last
-				// equal point is found.
-				continue
-			}
-
-			for k := i + 1; k < m; k++ {
-				for b := 0; b < len(cs[k]); b++ {
-					c := cs[i][j].Compare(cs[k][b])
-					if c == 0 {
-						cs[i], cs[k] = Transfer(b, cs[i], cs[k])
-						continue
-					}
-
-					if 0 < c {
-						break
-					}
-				}
-			}
-		}
-
-		cs[i].Sort(SortByVariance)
-	}
 }
 
 // Compare returns -1, 0, or 1 indicating cluster c precedes, is equal to, or
@@ -98,16 +59,16 @@ func (c *Cluster) Copy() Cluster {
 	}
 }
 
-// Update ...
+// Update cluster size, mean, and variance.
 func (c *Cluster) Update() {
-	// Update mean
+	c.size = len(c.points)
 	switch c.size {
 	case 0:
-		c.mean = Zero()
+		c.mean = NewPoint("", nil)
 	case 1:
 		c.mean = c.points[0].Copy()
 	default:
-		c.mean = c.points[0]
+		c.mean = c.points[0].Copy()
 		c.variance = c.points.Variance(c.points[0])
 		for _, p := range c.points[1:] {
 			if v := c.points.Variance(p); v < c.variance {
@@ -118,20 +79,22 @@ func (c *Cluster) Update() {
 	}
 
 	c.mean.label = ""
-
-	// Update variance
 	c.variance = c.points.Variance(c.mean)
 }
 
 // Sort a cluster by a sorting option.
-func (c *Cluster) Sort(sortOpt SortOption) {
+func (c *Cluster) Sort(sortOpt SortOption, stable bool) {
 	switch sortOpt {
 	case SortByVariance:
-		if c.mean.Compare(Zero()) != 0 {
-			sort.Slice(c.points, func(i, j int) bool { return c.mean.Dist(c.points[i]) < c.mean.Dist(c.points[j]) })
+		if !c.mean.IsZero() {
+			if stable {
+				sort.SliceStable(c.points, func(i, j int) bool { return c.mean.Dist(c.points[i]) < c.mean.Dist(c.points[j]) })
+			} else {
+				sort.Slice(c.points, func(i, j int) bool { return c.mean.Dist(c.points[i]) < c.mean.Dist(c.points[j]) })
+			}
 		}
 	case SortByDimension:
-		c.points.Sort()
+		c.points.Sort(stable)
 	}
 }
 
@@ -140,7 +103,7 @@ func (c *Cluster) Points() Points {
 	return c.points.Copy()
 }
 
-// Remove ...
+// Remove the ith point from a cluster.
 func (c *Cluster) Remove(i int) Point {
 	p := c.points[i]
 	if i+1 < c.size {
@@ -150,17 +113,16 @@ func (c *Cluster) Remove(i int) Point {
 	}
 
 	c.size--
-	c.points.Sort()
 	c.Update()
 	return p
 }
 
-// transfer ...
-func (c *Cluster) transfer(i int, cluster *Cluster) {
-	cluster.Append(c.Remove(i))
+// transfer ith point to another cluster.
+func (c *Cluster) transfer(i int, destination *Cluster) {
+	destination.Append(c.Remove(i))
 }
 
-// Variance ...
+// Variance of the cluster with respect to the mean.
 func (c *Cluster) Variance() float64 {
 	return c.variance
 }

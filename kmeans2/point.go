@@ -1,55 +1,47 @@
 package kmeans2
 
-// Point ...
+// A Point is a labeled value.
 type Point struct {
 	label string
 	value Interface
 }
 
-// NewPoint ...
+// NewPoint returns a new point given a label and a value.
 func NewPoint(label string, value Interface) Point {
-	return Point{
-		label: label,
-		value: value,
-	}
+	return Point{label: label, value: value}
 }
 
-// Zero ...
-func Zero() Point {
-	return Point{}
-}
-
-// At ...
-func (p *Point) At(i int) float64 {
-	return p.At(i)
-}
-
-// Compare ...
+// Compare two points.
 func (p *Point) Compare(point Point) int {
 	return p.value.Compare(point.value)
 }
 
-// Copy ...
+// Copy a point.
 func (p *Point) Copy() Point {
 	return NewPoint(p.label, p.value)
 }
 
-// Dist ...
+// Dist returns the distance between two points.
 func (p *Point) Dist(q Point) float64 {
 	return p.value.Dist(q.value)
 }
 
-// Label ...
+// IsZero returns true if a point has no value.
+func (p *Point) IsZero() bool {
+	return p.value == nil
+}
+
+// Label returns the label.
 func (p *Point) Label() string {
 	return p.label
 }
 
-// Len ...
+// Len returns the length of a point.
 func (p *Point) Len() int {
 	return p.value.Len()
 }
 
-// Relabel ...
+// Relabel a point.
 func (p *Point) Relabel(label string) {
 	p.label = label
 }
