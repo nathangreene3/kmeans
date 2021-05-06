@@ -33,9 +33,7 @@ func (p FPoint) Compare(point Point) int {
 
 // Copy a point.
 func (p FPoint) Copy() Point {
-	point := make(FPoint, len(p))
-	copy(point, p)
-	return point
+	return append(make(FPoint, 0, len(p)), p...)
 }
 
 // Dist returns the Euclidean Dist between two points.

@@ -8,6 +8,7 @@ import (
 var (
 	// seeded indicates if the random number generator has been seeded.
 	seeded bool
+
 	// seed is the seed used to seed the random number generator.
 	seed int64
 )

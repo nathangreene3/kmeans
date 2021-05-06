@@ -43,8 +43,8 @@ func (cs Clusters) Coalesce() {
 // Copy returns a copy of a set of clusters.
 func (cs Clusters) Copy() Clusters {
 	clusters := make(Clusters, 0, len(cs))
-	for _, c := range cs {
-		clusters = append(clusters, c.Copy())
+	for i := 0; i < len(cs); i++ {
+		clusters = append(clusters, cs[i].Copy())
 	}
 
 	return clusters
@@ -53,13 +53,13 @@ func (cs Clusters) Copy() Clusters {
 // Join into a single, sorted cluster (sorted on variance).
 func (cs Clusters) Join() Cluster {
 	var n int
-	for _, c := range cs {
-		n += len(c)
+	for i := 0; i < len(cs); i++ {
+		n += len(cs[i])
 	}
 
 	joinedCluster := make(Cluster, 0, n)
-	for _, c := range cs {
-		joinedCluster = append(joinedCluster, c...)
+	for i := 0; i < len(cs); i++ {
+		joinedCluster = append(joinedCluster, cs[i]...)
 	}
 
 	joinedCluster.Sort(SortByVariance)
@@ -70,8 +70,8 @@ func (cs Clusters) Join() Cluster {
 // cluster.
 func (cs Clusters) Means() Points {
 	means := make(Points, 0, len(cs))
-	for _, c := range cs {
-		means = append(means, c.Mean())
+	for i := 0; i < len(cs); i++ {
+		means = append(means, cs[i].Mean())
 	}
 
 	return means
@@ -80,8 +80,8 @@ func (cs Clusters) Means() Points {
 // MeanVariance returns the mean variance of a set of clusters.
 func (cs Clusters) MeanVariance() float64 {
 	var v float64
-	for _, c := range cs {
-		v += c.Variance(c.Mean())
+	for i := 0; i < len(cs); i++ {
+		v += cs[i].Variance(cs[i].Mean())
 	}
 
 	return v / float64(len(cs))
@@ -95,10 +95,10 @@ func (cs Clusters) MeanWeightedVariance() float64 {
 		v float64 // Sum of size-weighted variances
 	)
 
-	for _, c := range cs {
-		s := float64(len(c))
+	for i := 0; i < len(cs); i++ {
+		s := float64(len(cs[i]))
 		n += s
-		v += s * c.Variance(c.Mean())
+		v += s * cs[i].Variance(cs[i].Mean())
 	}
 
 	return v / n
@@ -111,16 +111,16 @@ func (cs Clusters) Sort() {
 
 // SortAll sorts each cluster. The set of clusters is NOT sorted.
 func (cs Clusters) SortAll(sortOpt SortOption) {
-	for _, c := range cs {
-		c.Sort(sortOpt)
+	for i := 0; i < len(cs); i++ {
+		cs[i].Sort(sortOpt)
 	}
 }
 
 // Variances returns the set of variances for each cluster.
 func (cs Clusters) Variances() []float64 {
 	variances := make([]float64, 0, len(cs))
-	for _, c := range cs {
-		variances = append(variances, c.Variance(c.Mean()))
+	for i := 0; i < len(cs); i++ {
+		variances = append(variances, cs[i].Variance(cs[i].Mean()))
 	}
 
 	return variances

@@ -3,8 +3,6 @@ package kmeans
 import (
 	gomath "math"
 	"sort"
-
-	"github.com/nathangreene3/math"
 )
 
 // Cluster is a set of points.
@@ -19,13 +17,14 @@ func (c Cluster) Compare(cluster Cluster) int {
 		if n == 0 {
 			return 0
 		}
+
 		return -1
 	case n == 0:
 		return 1
 	}
 
 	var (
-		maxIndex   = math.MinInt(m, n)
+		maxIndex   = minInt(m, n)
 		comparison int
 	)
 
@@ -48,8 +47,8 @@ func (c Cluster) Compare(cluster Cluster) int {
 // Copy a cluster.
 func (c Cluster) Copy() Cluster {
 	cluster := make(Cluster, 0, len(c))
-	for _, p := range c {
-		cluster = append(cluster, p.Copy())
+	for i := 0; i < len(c); i++ {
+		cluster = append(cluster, c[i].Copy())
 	}
 
 	return cluster
@@ -65,14 +64,14 @@ func (c Cluster) Mean() Point {
 	}
 
 	var (
-		mean         Point
 		meanVariance = gomath.MaxFloat64
 		variance     float64
+		mean         Point
 	)
 
-	for _, p := range c {
-		if variance = c.Variance(p); variance < meanVariance {
-			mean = p
+	for i := 0; i < len(c); i++ {
+		if variance = c.Variance(c[i]); variance < meanVariance {
+			mean = c[i].Copy()
 			meanVariance = variance
 		}
 	}
@@ -95,8 +94,8 @@ func (c Cluster) Sort(sortOpt SortOption) {
 // ToPoints returns a set of points from a cluster.
 func (c Cluster) ToPoints() Points {
 	points := make(Points, 0, len(c))
-	for _, p := range c {
-		points = append(points, p.Copy())
+	for i := 0; i < len(c); i++ {
+		points = append(points, c[i].Copy())
 	}
 
 	return points
@@ -112,8 +111,8 @@ func (c Cluster) Variance(mean Point) float64 {
 	// The variance is the sum of the squared Euclidean distances, divided by
 	// the number of points minus one.
 	var v float64
-	for _, p := range c {
-		v += mean.Dist(p)
+	for i := 0; i < len(c); i++ {
+		v += mean.Dist(c[i]) // That's not squared... unless the distance function is squared.  That's defined by the user, though.
 	}
 
 	return v / float64(n-1)

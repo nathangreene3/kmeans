@@ -18,8 +18,8 @@ type Model struct {
 // New returns a trained k-means model.
 func New(k int, points Points) *Model {
 	var (
-		model                   Model
 		minMeanWeightedVariance = math.MaxFloat64
+		model                   Model
 		minClusters             Clusters
 	)
 
@@ -40,12 +40,12 @@ func New(k int, points Points) *Model {
 // Assignment returns the index of the cluster a point belongs to.
 func (mdl *Model) Assignment(point Point) int {
 	var (
-		assignment int
 		minDist    = math.MaxFloat64
+		assignment int
 	)
 
-	for i, mn := range mdl.means {
-		if dist := point.Dist(mn); dist < minDist {
+	for i := 0; i < len(mdl.means); i++ {
+		if dist := point.Dist(mdl.means[i]); dist < minDist {
 			minDist = dist
 			assignment = i
 		}
@@ -154,14 +154,14 @@ func (mdl *Model) Train(k int, points Points) {
 		// which is nil, will be reassigned to be a random point on the space
 		// spanned by the maximum point.
 		mdl.update()
-		for i, mn := range mdl.means {
-			if mn == nil {
+		for i := 0; i < len(mdl.means); i++ {
+			if mdl.means[i] == nil {
 				mdl.means[i] = points.Random()
 				changed = true
 			}
 		}
 
-		for h := range mdl.clusters {
+		for h := 0; h < len(mdl.clusters); h++ {
 			// Each cluster is sorted, so the most variant point is at index
 			// clstrs[h][sizes[h]-1]. When the point clstrs[h][i] variance is
 			// small enough to not move to another cluster, then we can move on
@@ -169,13 +169,16 @@ func (mdl *Model) Train(k int, points Points) {
 			// [0,i). So, h counts down and halts early.
 			for i := 0; i < len(mdl.clusters[h]); i++ {
 				// Find the index of the cluster closest to point i in cluster h.
-				minIndex := h
-				minSqDist := mdl.means[h].Dist(mdl.clusters[h][i])
-				for j := range mdl.clusters {
+				var (
+					minIndex  = h
+					minSqDist = mdl.means[h].Dist(mdl.clusters[h][i])
+				)
+
+				for j := 0; j < len(mdl.clusters); j++ {
 					if h == j {
 						// If h = j, then we are comparing the same cluster. If
 						// the size of cluster j is zero, then, obviously,
-						// there's no points to compare.
+						// there are no points to compare.
 						continue
 					}
 
@@ -214,7 +217,5 @@ func (mdl *Model) Variance(i int) float64 {
 
 // Variances returns a copy of the variances of the clustes.
 func (mdl *Model) Variances() []float64 {
-	variances := make([]float64, len(mdl.variances))
-	copy(variances, mdl.variances)
-	return variances
+	return append(make([]float64, 0, len(mdl.variances)), mdl.variances...)
 }
