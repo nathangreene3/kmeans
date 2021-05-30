@@ -1,5 +1,7 @@
 github.com/guptarohit/asciigraph v0.4.1 h1:YHmCMN8VH81BIUIgTg2Fs3B52QDxNZw2RQ6j5pGoSxo=
 github.com/guptarohit/asciigraph v0.4.1/go.mod h1:9fYEfE5IGJGxlP1B+w8wHFy7sNZMhPtn59f0RLtpRFM=
+github.com/guptarohit/asciigraph v0.5.2 h1:aG4kATuuyHQMdTi89KKVIRIcDSIHrsKIozo/UsUE5AM=
+github.com/guptarohit/asciigraph v0.5.2/go.mod h1:dYl5wwK4gNsnFf9Zp+l06rFiDZ5YtXM6x7SRWZ3KGag=
 github.com/nathangreene3/table v0.0.0-20210328054556-cd5c6d66ba12 h1:ZUoqXt2cNy32tE23qN1q4VykpbxAe9hB0CnjjE5aZJQ=
 github.com/nathangreene3/table v0.0.0-20210328054556-cd5c6d66ba12/go.mod h1:UvQxiL3X8zBEaSodpew5M/+TNYrCjmheRgLmUCZouo0=
 github.com/tidwall/gjson v1.6.8 h1:CTmXMClGYPAmln7652e69B7OLXfTi5ABcPPwjIWUv7w=

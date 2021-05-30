@@ -5,100 +5,10 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/guptarohit/asciigraph"
+	"github.com/nathangreene3/table"
 )
-
-func TestAssignment(t *testing.T) {
-	tests := []struct {
-		kmns       Model
-		p          Point
-		assignment int
-	}{
-		{
-			kmns:       Init(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
-			p:          FPoint{1.5},
-			assignment: 0,
-		},
-		{
-			kmns:       Init(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
-			p:          FPoint{2.0},
-			assignment: 0,
-		},
-		{
-			kmns:       Init(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
-			p:          FPoint{2.5},
-			assignment: 0,
-		},
-		{
-			kmns:       Init(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
-			p:          FPoint{4.5},
-			assignment: 1,
-		},
-		{
-			kmns:       Init(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
-			p:          FPoint{5.0},
-			assignment: 1,
-		},
-		{
-			kmns:       Init(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
-			p:          FPoint{5.5},
-			assignment: 1,
-		},
-		{
-			kmns:       Init(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
-			p:          FPoint{7.5},
-			assignment: 2,
-		},
-		{
-			kmns:       Init(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
-			p:          FPoint{8.0},
-			assignment: 2,
-		},
-		{
-			kmns:       Init(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
-			p:          FPoint{8.5},
-			assignment: 2,
-		},
-	}
-
-	for _, test := range tests {
-		if assignment := test.kmns.Class(test.p); test.assignment != assignment {
-			t.Errorf("\nexpected %d\nreceived %d\n", test.assignment, assignment)
-		}
-	}
-}
-
-func TestOneDimensionalPoints(t *testing.T) {
-	seed := int64(time.Now().Nanosecond())
-	rand.Seed(seed)
-	fmt.Printf("seed: %d\n", seed)
-
-	tests := []struct {
-		k    int
-		data []Point
-	}{
-		{
-			k: 3,
-			data: []Point{
-				FPoint{1.9},
-				FPoint{2.0},
-				FPoint{2.1},
-				FPoint{4.9},
-				FPoint{5.0},
-				FPoint{5.1},
-				FPoint{7.9},
-				FPoint{8.0},
-				FPoint{8.1},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		kmns := KMeans(test.k, 3, test.data...)
-		fmt.Println(kmns)
-	}
-
-	t.Fail()
-}
 
 var species = map[string][]Point{
 	"setosa": {
@@ -259,6 +169,108 @@ var species = map[string][]Point{
 	},
 }
 
+func TestAssignment(t *testing.T) {
+	tests := []struct {
+		kmns Model
+		pnt  Point
+		exp  int
+	}{
+		{
+			kmns: New(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
+			pnt:  FPoint{1.5},
+			exp:  0,
+		},
+		{
+			kmns: New(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
+			pnt:  FPoint{2.0},
+			exp:  0,
+		},
+		{
+			kmns: New(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
+			pnt:  FPoint{2.5},
+			exp:  0,
+		},
+		{
+			kmns: New(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
+			pnt:  FPoint{4.5},
+			exp:  1,
+		},
+		{
+			kmns: New(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
+			pnt:  FPoint{5.0},
+			exp:  1,
+		},
+		{
+			kmns: New(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
+			pnt:  FPoint{5.5},
+			exp:  1,
+		},
+		{
+			kmns: New(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
+			pnt:  FPoint{7.5},
+			exp:  2,
+		},
+		{
+			kmns: New(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
+			pnt:  FPoint{8.0},
+			exp:  2,
+		},
+		{
+			kmns: New(FPoint{2.0}, FPoint{5.0}, FPoint{8.0}),
+			pnt:  FPoint{8.5},
+			exp:  2,
+		},
+	}
+
+	for _, test := range tests {
+		if rec := test.kmns.Class(test.pnt); test.exp != rec {
+			t.Errorf("\nexpected %d\nreceived %d\n", test.exp, rec)
+		}
+
+		if rec, _ := test.kmns.(kMeans).classDist(test.pnt); test.exp != rec {
+			t.Errorf("\nexpected %d\nreceived %d\n", test.exp, rec)
+		}
+
+		meanDists := newDistMtx(test.kmns.(kMeans)...)
+		if rec, _ := test.kmns.(kMeans).classDistMem(test.pnt, meanDists); test.exp != rec {
+			t.Errorf("\nexpected %d\nreceived %d\n", test.exp, rec)
+		}
+	}
+}
+
+func TestOneDimensionalPoints(t *testing.T) {
+	seed := int64(time.Now().Nanosecond())
+	rand.Seed(seed)
+	fmt.Printf("seed: %d\n", seed)
+
+	tests := []struct {
+		k    int
+		data []Point
+	}{
+		{
+			k: 3,
+			data: []Point{
+				FPoint{1.9},
+				FPoint{2.0},
+				FPoint{2.1},
+				FPoint{4.9},
+				FPoint{5.0},
+				FPoint{5.1},
+				FPoint{7.9},
+				FPoint{8.0},
+				FPoint{8.1},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		kmns := KMeans(test.k, 3, test.data...)
+		fmt.Println(kmns)
+	}
+
+	t.Fail()
+}
+
 func TestSepals(t *testing.T) {
 	seed := int64(time.Now().Nanosecond())
 	rand.Seed(seed)
@@ -273,6 +285,8 @@ func TestSepals(t *testing.T) {
 		data = append(data, v...)
 	}
 
+	rand.Shuffle(n, func(i, j int) { data[i], data[j] = data[j], data[i] })
+
 	var (
 		kmns    = KMeans(len(species), 3, data...)
 		expKMns = kMeans{
@@ -280,8 +294,8 @@ func TestSepals(t *testing.T) {
 			KMeans(1, 3, species["versicolor"]...).(kMeans)[0],
 			KMeans(1, 3, species["virginica"]...).(kMeans)[0],
 		}
-		assigns         = make([]int, len(data))
-		expAssigns      = make([]int, len(data))
+		classes         = make([]int, len(data))
+		expClasses      = make([]int, len(data))
 		clusterFreqs    = make([]int, len(species))
 		expClusterFreqs = make([]int, len(species))
 	)
@@ -300,10 +314,10 @@ func TestSepals(t *testing.T) {
 	)
 
 	for i := 0; i < len(data); i++ {
-		assigns[i] = expKMns.Class(data[i])
-		expAssigns[i] = expKMns.Class(data[i])
-		clusterFreqs[assigns[i]]++
-		expClusterFreqs[expAssigns[i]]++
+		classes[i] = expKMns.Class(data[i])
+		expClasses[i] = expKMns.Class(data[i])
+		clusterFreqs[classes[i]]++
+		expClusterFreqs[expClasses[i]]++
 	}
 
 	fmt.Printf("\n"+
@@ -311,6 +325,42 @@ func TestSepals(t *testing.T) {
 		"expected cluster sizes: %v\n",
 		clusterFreqs,
 		expClusterFreqs,
+	)
+
+	r := Report(kmns, data...)
+	if err := r.ToCSV("iris_clusters_" + time.Now().Format(time.RFC3339) + ".csv"); err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Println(r.Format(table.Fmt4))
+	t.Fail()
+}
+
+func TestSepalsFindK(t *testing.T) {
+	seed := int64(time.Now().Nanosecond())
+	rand.Seed(seed)
+
+	var n int
+	for _, v := range species {
+		n += len(v)
+	}
+
+	data := make([]Point, 0, n)
+	for _, v := range species {
+		data = append(data, v...)
+	}
+
+	tbl := table.New(table.NewHeader("K", "Score"))
+	scores := make([]float64, 0, 10)
+	for k := 1; k <= 10; k++ {
+		tbl.Append(table.NewRow(k, KMeans(k, 3, data...).Score(data...)))
+		scores = append(scores, tbl.GetFlt(k-1, 1))
+	}
+
+	fmt.Printf(
+		"%s\n%s\n",
+		tbl.Format(table.Fmt4),
+		asciigraph.Plot(scores, asciigraph.Caption("Scores")),
 	)
 
 	t.Fail()

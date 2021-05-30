@@ -21,29 +21,18 @@ import (
 // TODO
 // ------------------------------------------------------------------------------------
 // 1. k-Means++ selects means more carefully before training to reduce convergence
-//    iterations.
-// 2. Use the triangle inequality to reduce distance calculations.
+//    iterations. DONE.
+//    https://www.geeksforgeeks.org/ml-k-means-algorithm/
+// 2. Use the triangle inequality to reduce distance calculations. DONE.
+//    https://www.aaai.org/Papers/ICML/2003/ICML03-022.pdf
 // 3. Implement a variant for mini batching to handle large data sets.
 // ------------------------------------------------------------------------------------
-
-// Model defines the k-means model.
-type Model interface {
-	Class(Point) int
-	Clusters(...Point) [][]Point
-	Dist(int, Point) float64
-	Err(int, ...Point) (float64, int)
-	Errs(...Point) ([]float64, []int)
-	K() int
-	Mean(int) Point
-	Score(...Point) float64
-	Train(...Point) Model
-}
 
 // kMeans is a set of k points representing the means of their clusters. Implements the Model interface.
 type kMeans []Point
 
-// Init returns a model ready for training initialized with a given set of points as the cluster means.
-func Init(means ...Point) Model {
+// New returns a model ready for training initialized with a given set of points as the cluster means.
+func New(means ...Point) Model {
 	kmns := make(kMeans, 0, len(means))
 	for i := 0; i < len(means); i++ {
 		kmns = append(kmns, means[i].Copy())
@@ -58,12 +47,8 @@ func KMeans(k, trains int, data ...Point) Model {
 		panic("insufficient number of data points")
 	}
 
-	var (
-		maxScoreKMns kMeans             // Model having the highest score to return
-		maxScore     = -math.MaxFloat64 // Score of model
-	)
-
-	for ; 0 < trains; trains-- {
+	var maxScoreKMns kMeans // Model having the highest score to return
+	for maxScore := -math.MaxFloat64; 0 < trains; trains-- {
 		var (
 			kmns    = make(kMeans, 0, k) // Cluster means
 			binSize = len(data) / k      // Partition size of data points each mean is selected from
@@ -74,14 +59,38 @@ func KMeans(k, trains int, data ...Point) Model {
 			binSize++
 		}
 
-		// Initialize cluster means
-		for j := 0; len(kmns) < cap(kmns); j += binSize {
-			if len(data) < j+binSize {
-				binSize = len(data) - j
+		// Random initialization
+		/*
+			for i := 0; i+binSize <= len(data); i += binSize {
+				kmns = append(kmns, data[i+rand.Intn(binSize)])
 			}
 
-			kmns = append(kmns, data[j+rand.Intn(binSize)])
+			if len(kmns) < cap(kmns) {
+				kmns = append(kmns, data[len(kmns)+rand.Intn(cap(kmns)-len(kmns))])
+			}
+		*/
+
+		// kmeans++ initialization
+		// /*
+		kmns = append(kmns, data[rand.Intn(len(data))])
+		for i := 1; i < k; i++ {
+			var (
+				meanDists = newDistMtx(kmns...)
+				maxJ      int
+				maxDist   float64
+			)
+
+			for j := 0; j < len(data); j++ {
+				_, d := kmns.classDistMem(data[j], meanDists)
+				if maxDist < d {
+					maxJ = j
+					maxDist = d
+				}
+			}
+
+			kmns = append(kmns, data[maxJ])
 		}
+		// */
 
 		if s := kmns.Train(data...).Score(data...); maxScore < s {
 			maxScoreKMns = kmns
@@ -90,12 +99,6 @@ func KMeans(k, trains int, data ...Point) Model {
 	}
 
 	return maxScoreKMns
-}
-
-// Class returns the cluster classification a point belongs to (i.e. is closest to).
-func (kmns kMeans) Class(datum Point) int {
-	i, _ := kmns.classDist(datum)
-	return i
 }
 
 // Clusters ...
@@ -109,14 +112,20 @@ func (kmns kMeans) Clusters(data ...Point) [][]Point {
 	return clusters
 }
 
+// Class returns the cluster classification a point belongs to (i.e. is closest to).
+func (kmns kMeans) Class(datum Point) int {
+	i, _ := kmns.classDist(datum)
+	return i
+}
+
 // classDist returns the classification and distance between a data point and its mean.
 func (kmns kMeans) classDist(datum Point) (int, float64) {
 	var (
 		i    int
-		minD = math.MaxFloat64
+		minD = kmns[i].Dist(datum)
 	)
 
-	for j := 0; j < len(kmns); j++ {
+	for j := 1; j < len(kmns); j++ {
 		if d := kmns[j].Dist(datum); d < minD {
 			i = j
 			minD = d
@@ -124,6 +133,34 @@ func (kmns kMeans) classDist(datum Point) (int, float64) {
 	}
 
 	return i, minD
+}
+
+// classDistMem returns the classification and distance between a data point and its
+// mean. Requires the distance between each mean be computed in advance, but otherwise
+// behaves the same as classDist.
+func (kmns kMeans) classDistMem(datum Point, meanDists triMatrix) (int, float64) {
+	// Implements triangle inequality to prevent needless distance calculations. If
+	// point p is assigned to cluster 0 with mean m0 and we want to know if cluster
+	// mean m1 is nearer, there's no point in computing the distance from p to m1 if
+	// the distance from p to m0 is less than half the distance from m0 to m1. That
+	// is, if d(p, m0) <= d(m0, m1) / 2, then don't compute d(p, m1).
+
+	var (
+		class int
+		dist  = kmns[class].Dist(datum)
+	)
+
+	for j := 1; j < len(kmns); j++ {
+		if dist <= meanDists.dist(class, j)/2 {
+			continue
+		}
+
+		if d := kmns[j].Dist(datum); d < dist {
+			class, dist = j, d
+		}
+	}
+
+	return class, dist
 }
 
 // Dist returns the distance from cluster class to a given point.
@@ -137,7 +174,10 @@ func (kmns kMeans) Mean(class int) Point { return kmns[class].Copy() }
 
 // Train returns a trained model on a set of data.
 func (kmns kMeans) Train(data ...Point) Model {
-	classes := make([]int, len(data)) // Cluster assignments; the ith data point is assigned to the ith value in assigns; that is, data[i] is closest to kmns[assigns[i]]
+	var (
+		classes   = make([]int, len(data)) // Cluster assignments; the ith data point is assigned to the ith value in assigns; that is, data[i] is closest to kmns[assigns[i]]
+		meanDists = newDistMtx(kmns...)    // Distances between cluster means
+	)
 
 	// Train until no more reassignments are made
 	for {
@@ -146,7 +186,7 @@ func (kmns kMeans) Train(data ...Point) Model {
 		// Update assignments
 		for i := 0; i < len(data); i++ {
 			j := classes[i]
-			classes[i] = kmns.Class(data[i])
+			classes[i], _ = kmns.classDistMem(data[i], meanDists)
 			c = c || classes[i] != j
 		}
 
@@ -160,6 +200,7 @@ func (kmns kMeans) Train(data ...Point) Model {
 		}
 
 		// Update cluster means
+		// /*
 		for h := 0; h < len(kmns); h++ {
 			var (
 				minI    int               // Index i minimizing the variance of cluster h
@@ -168,22 +209,17 @@ func (kmns kMeans) Train(data ...Point) Model {
 
 			for i := 0; i < len(data); i++ {
 				if h == classes[i] {
-					var (
-						vars float64      // Variance of cluster h with respect to data point i
-						size float64 = -1 // Size of cluster h
-					)
-
 					// Compute the variance of cluster h to data point i
+					var vars, size float64
 					for j := 0; j < len(data); j++ {
 						if classes[i] == classes[j] {
-							d := data[i].SqDist(data[j])
-							vars += d
+							vars += data[i].SqDist(data[j])
 							size++
 						}
 					}
 
-					if 0 < size {
-						vars /= size
+					if 1 < size {
+						vars /= (size - 1)
 					}
 
 					// Update the index i that minimizes the variance for cluster h
@@ -197,6 +233,30 @@ func (kmns kMeans) Train(data ...Point) Model {
 			// Update the mean of cluster h
 			kmns[h] = data[minI]
 		}
+		// */
+
+		// This updates each center as the actual mean of its cluster, not as a representative of the cluster. However, it doesn't work and usually results in an infinite cycle.
+		/*
+			for i := 0; i < len(kmns); i++ {
+				kmns[i] = kmns[i].Mult(0)
+
+				var size float64
+				for j := 0; j < len(data); j++ {
+					if i == classes[j] {
+						kmns[i] = kmns[i].Add(data[j])
+						size++
+					}
+				}
+
+				if size == 0 {
+					kmns[i] = data[rand.Intn(len(data))].Copy()
+				} else {
+					kmns[i] = kmns[i].Mult(1.0 / size)
+				}
+			}
+		*/
+
+		meanDists.update(kmns...)
 	}
 }
 
@@ -233,16 +293,16 @@ func (kmns kMeans) Errs(data ...Point) ([]float64, []int) {
 	return errs, sizes
 }
 
-// Score ...
+// Score indicates how well a model clusters data. A higher score inidicates the model is a better fit.
 func (kmns kMeans) Score(data ...Point) float64 {
 	var (
-		errs, sizes  = kmns.Errs(data...)
-		meanWghtErrs float64
+		errs, sizes = kmns.Errs(data...)
+		meanErrs    float64 // e := (e0/n0 + e1/n1 + ...) / k
 	)
 
 	for i := 0; i < len(errs); i++ {
-		meanWghtErrs += errs[i] / float64(sizes[i])
+		meanErrs += errs[i] / float64(sizes[i])
 	}
 
-	return -meanWghtErrs / float64(len(data)) // Lower mean weighted error means higher score
+	return -meanErrs / float64(len(kmns)) // Lower mean weighted error means higher score
 }
