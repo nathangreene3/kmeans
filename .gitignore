@@ -13,4 +13,19 @@ kmeans
 *.out
 
 # Data files
+data/
 *.csv
+*.json
+*.toml
+*.txt
+*.yaml
+*.yml
+
+# Images
+*.jpeg
+*.jpg
+*.png
+
+# Additional
+test/
+.vscode
