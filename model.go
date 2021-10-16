@@ -305,7 +305,13 @@ func (mdl Model) Means() []Point {
 // Score indicates how well a model clusters data. A higher score
 // inidicates the model is a better fit.
 func (mdl Model) Score(data ...Point) float64 {
-	return -sum(mdl.Errs(data...)...)
+	var sumSqDists float64
+	for i := 0; i < len(data); i++ {
+		_, dist := mdl.classDist(data[i])
+		sumSqDists -= dist * dist
+	}
+
+	return sumSqDists
 }
 
 // Size returns the size of the specified cluster.

@@ -28,3 +28,29 @@ The *k*-means algorithm is an unsupervised learning technique for grouping data 
 | **Random** | The classic (naive, Lloyd's algorithm) method is random initialization. For small data sets, this is faster than plus-plus, but in some cases, a model will be returned that does not represent the data it was trained upon due to severe overlap, dimension bias, or other reasons beyond the scope or responsibility of *k*-means, which is an unsupervised method. That is, *k*-means does not train to match data to labels, it discovers labels. |
 | **Plus-plus** | This improves upon random initialization by selecting representatives of the training data set that have the maximum distance from *any* mean. This attempts to prevent means from being initialized that are already close to each other. |
 | **First-*k*** | The first *k* data points will be used as the means of the model. This method is fast, but exists only to allow the caller to initialize the model with means they know to be close to the expected means representing their data. Since there is no random behavior in this method, training more than once is not necessary. |
+
+## Examples
+
+Below is a taylored list of points that naturally form three clusters with known means.
+
+```go
+data := []Point{
+    {1.0, 1.0},
+    {2.0, 2.0},
+    {3.0, 1.0},
+    // Exp mean: (2, 1.333...)
+
+    {1.0, 4.0},
+    {1.0, 5.0},
+    {2.0, 5.0},
+    // Exp mean: (1.333..., 4.666...)
+
+    {4.0, 3.0},
+    {5.0, 2.0},
+    {5.0, 3.0},
+    {5.0, 4.0},
+    // Exp mean: (4.75, 3.0)
+}
+
+mdl := New(3, data, SetTrainRounds(3), SetInitMethod(PlusPlus)) // [(1.333..., 4.666...) (2, 1.333...) (4.75, 3)]
+```

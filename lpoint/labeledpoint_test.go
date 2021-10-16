@@ -7,9 +7,9 @@ import (
 func TestJSON(t *testing.T) {
 	tests := [][]LPoint{
 		{
-			NewLPoint(1, "one", 1.0, 1.0, 1.0),
-			NewLPoint(2, "two", 2.0, 2.0, 2.0),
-			NewLPoint(3, "three", 3.0, 3.0, 3.0),
+			New(1, "one", 1.0, 1.0, 1.0),
+			New(2, "two", 2.0, 2.0, 2.0),
+			New(3, "three", 3.0, 3.0, 3.0),
 		},
 	}
 
@@ -71,4 +71,18 @@ func TestLabels(t *testing.T) {
 			}
 		}
 	}
+}
+
+func BenchmarkLabels(b *testing.B) {
+	labeledData, err := ReadJSONFile("../data/radial")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	var labels []string
+	for i := 0; i < b.N; i++ {
+		labels = Labels(labeledData...)
+	}
+
+	_ = labels
 }

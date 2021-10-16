@@ -75,18 +75,19 @@ func TestClass(t *testing.T) {
 
 func TestKMeans(t *testing.T) {
 	/*
-		|
-		+   x   x
-		|
-		+   x               x
-		|
-		+               x   x
-		|
-		+       x           x
-		|
-		+   x       x
-		|
-		+---+---+---+---+---+---
+		   |
+		   +   x   x
+		   |
+		   +   x               x
+		   |
+		   +               x   x
+		   |
+		   +       x           x
+		   |
+		   +   x       x
+		   |
+		---+---+---+---+---+---+---
+		   |
 	*/
 
 	const tol = 1e-09

@@ -22,8 +22,8 @@ type LPoint struct {
 	Point kmeans.Point `json:"point"`
 }
 
-// NewLPoint ...
-func NewLPoint(id int, label string, values ...float64) LPoint {
+// New returns a new labeled point.
+func New(id int, label string, values ...float64) LPoint {
 	lp := LPoint{
 		ID:    id,
 		Label: label,
@@ -73,24 +73,11 @@ func JSON(lps ...LPoint) (string, error) {
 // Labels returns a list of the distinct labels found in the given set
 // of labeled points. The list will be sorted.
 func Labels(lps ...LPoint) []string {
-	// var labels []string
-	// for i := 0; i < len(lps); i++ {
-	// 	var (
-	// 		label = lps[i].Label
-	// 		index = sort.SearchStrings(labels, label)
-	// 	)
+	var (
+		labelFreq = LabelFreq(lps...)
+		labels    = make([]string, 0, len(labelFreq))
+	)
 
-	// 	if index == len(labels) {
-	// 		labels = append(labels, label)
-	// 	} else if labels[index] != label {
-	// 		labels = append(labels[:index+1], labels[index:]...)
-	// 		labels[index] = label
-	// 	}
-	// }
-
-	// TODO: Compare these methods
-	labelFreq := LabelFreq(lps...)
-	labels := make([]string, 0, len(labelFreq))
 	for label := range labelFreq {
 		labels = append(labels, label)
 	}
@@ -109,7 +96,7 @@ func ParseJSON(s string) ([]LPoint, error) {
 	return lps, nil
 }
 
-// Points ...
+// Points returns a list of points.
 func Points(lps ...LPoint) []kmeans.Point {
 	ps := make([]kmeans.Point, 0, len(lps))
 	for i := 0; i < len(lps); i++ {
@@ -176,7 +163,8 @@ func ReadJSONFile(file string) ([]LPoint, error) {
 	return ParseJSON(string(b))
 }
 
-// LabelFreq ...
+// LabelFreq returns a mapping of each label to the frequency of that
+// label in the given list of labeled points.
 func LabelFreq(lps ...LPoint) map[string]int {
 	labelFreq := make(map[string]int)
 	for i := 0; i < len(lps); i++ {
@@ -186,12 +174,12 @@ func LabelFreq(lps ...LPoint) map[string]int {
 	return labelFreq
 }
 
-// String ...
+// String returns a representation of a labeled point.
 func (lp LPoint) String() string {
 	return fmt.Sprintf("{%d %s %v}", lp.ID, lp.Label, lp.Point)
 }
 
-// Validate ...
+// Validate a list of labeled points.
 func Validate(lps ...LPoint) error {
 	for i := 1; i < len(lps); i++ {
 		if len(lps[0].Point) != len(lps[i].Point) {
