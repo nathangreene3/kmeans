@@ -73,7 +73,7 @@ func TestClass(t *testing.T) {
 	}
 }
 
-func TestKMeans(t *testing.T) {
+func TestNew(t *testing.T) {
 	/*
 		   |
 		   +   x   x

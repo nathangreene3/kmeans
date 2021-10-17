@@ -86,6 +86,17 @@ func Labels(lps ...LPoint) []string {
 	return labels
 }
 
+// Parse ...
+func Parse(s string) (LPoint, error) {
+	var lp LPoint
+	if len(s) < 2 {
+		// Minimum labeled point: {0  {}}
+		return LPoint{}, errors.New("invalid format")
+	}
+
+	return lp, nil
+}
+
 // ParseJSON parses labeled points from a json-encoded string.
 func ParseJSON(s string) ([]LPoint, error) {
 	var lps []LPoint
@@ -108,6 +119,11 @@ func Points(lps ...LPoint) []kmeans.Point {
 
 // ReadCSVFile ...
 func ReadCSVFile(file string, header bool) ([]LPoint, error) {
+	file = filepath.Clean(file)
+	if !strings.EqualFold(filepath.Ext(file), ".csv") {
+		file += ".csv"
+	}
+
 	b, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
@@ -130,8 +146,8 @@ func ReadCSVFile(file string, header bool) ([]LPoint, error) {
 
 	ps := make([]LPoint, 0, n)
 	for ; i < len(records); i++ {
-		p := make(kmeans.Point, 0, len(records[i]))
-		for j := 0; j < len(records[i])-1; j++ {
+		p := make(kmeans.Point, 0, len(records[i])-2)
+		for j := 2; j < len(records[i]); j++ {
 			pj, err := strconv.ParseFloat(records[i][j], 64)
 			if err != nil {
 				return nil, err
@@ -140,7 +156,18 @@ func ReadCSVFile(file string, header bool) ([]LPoint, error) {
 			p = append(p, pj)
 		}
 
-		ps = append(ps, LPoint{ID: i, Label: records[i][len(records[i])-1], Point: p})
+		id, err := strconv.Atoi(records[i][0])
+		if err != nil {
+			return nil, err
+		}
+
+		lp := LPoint{
+			ID:    id,
+			Label: strings.ToLower(records[i][1]),
+			Point: p,
+		}
+
+		ps = append(ps, lp)
 	}
 
 	return ps, nil
@@ -192,9 +219,10 @@ func Validate(lps ...LPoint) error {
 
 // WriteCSVFile writes a list of points to a csv file. The header will
 // only be written if provided. The last column will be the label.
-func WriteCSVFile(file string, header []string, lps ...LPoint) error {
-	if err := Validate(lps...); err != nil {
-		return err
+func WriteCSVFile(file string, dimNames []string, lps ...LPoint) error {
+	file = filepath.Clean(file)
+	if !strings.EqualFold(filepath.Ext(file), ".csv") {
+		file += ".csv"
 	}
 
 	var (
@@ -202,27 +230,39 @@ func WriteCSVFile(file string, header []string, lps ...LPoint) error {
 		w   = csv.NewWriter(buf)
 	)
 
-	if len(header) != 0 {
-		if len(header) != Dims(lps...) {
+	dims := Dims(lps...)
+	if len(dimNames) != 0 {
+		if len(dimNames) != dims {
 			return errors.New("dimension mismatch")
 		}
 
-		for j := 0; j < len(header); j++ {
-			header[j] = strings.ToTitle(header[j])
+		header := append(
+			make([]string, 0, len(dimNames)+2),
+			"id",
+			"label",
+		)
+
+		for j := 0; j < len(dimNames); j++ {
+			header = append(header, strings.ToLower(dimNames[j]))
 		}
 
-		if err := w.Write(append(header, "Label")); err != nil {
+		if err := w.Write(header); err != nil {
 			return err
 		}
 	}
 
 	for i := 0; i < len(lps); i++ {
-		record := make([]string, 0, len(lps[i].Point))
+		record := append(
+			make([]string, 0, len(lps[i].Point)+2),
+			strconv.Itoa(lps[i].ID),
+			lps[i].Label,
+		)
+
 		for j := 0; j < len(lps[i].Point); j++ {
 			record = append(record, strconv.FormatFloat(lps[i].Point[j], 'f', -1, 64))
 		}
 
-		if err := w.Write(append(record, lps[i].Label)); err != nil {
+		if err := w.Write(record); err != nil {
 			return err
 		}
 	}

@@ -41,21 +41,21 @@ func TestJSON(t *testing.T) {
 
 func TestLabels(t *testing.T) {
 	tests := []struct {
-		filePath  string
+		file      string
 		expLabels []string
 	}{
 		{
-			filePath:  "../data/iris",
+			file:      "../data/iris",
 			expLabels: []string{"setosa", "versicolor", "virginica"},
 		},
 		{
-			filePath:  "../data/radial_k4",
-			expLabels: []string{"1", "2", "3", "4"},
+			file:      "../data/radial",
+			expLabels: []string{"1", "2", "3"},
 		},
 	}
 
 	for _, test := range tests {
-		data, err := ReadJSONFile(test.filePath)
+		data, err := ReadJSONFile(test.file)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -85,4 +85,8 @@ func BenchmarkLabels(b *testing.B) {
 	}
 
 	_ = labels
+}
+
+func TestReadWriteFile(t *testing.T) {
+
 }

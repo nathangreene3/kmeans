@@ -252,7 +252,7 @@ func (p Point) SqDist(q Point) float64 {
 }
 
 // String returns a representation of a point formatted as
-// (0.0, ..., 0.0).
+// (0.0, ..., 0.0). A nil point is represented as the empty string.
 func (p Point) String() string {
 	var sb strings.Builder
 	if len(p) != 0 {

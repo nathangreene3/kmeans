@@ -29,28 +29,31 @@ The *k*-means algorithm is an unsupervised learning technique for grouping data 
 | **Plus-plus** | This improves upon random initialization by selecting representatives of the training data set that have the maximum distance from *any* mean. This attempts to prevent means from being initialized that are already close to each other. |
 | **First-*k*** | The first *k* data points will be used as the means of the model. This method is fast, but exists only to allow the caller to initialize the model with means they know to be close to the expected means representing their data. Since there is no random behavior in this method, training more than once is not necessary. |
 
-## Examples
-
-Below is a taylored list of points that naturally form three clusters with known means.
+## Example
 
 ```go
-data := []Point{
-    {1.0, 1.0},
-    {2.0, 2.0},
-    {3.0, 1.0},
-    // Exp mean: (2, 1.333...)
+package main
 
-    {1.0, 4.0},
-    {1.0, 5.0},
-    {2.0, 5.0},
-    // Exp mean: (1.333..., 4.666...)
+import (
+    "log"
 
-    {4.0, 3.0},
-    {5.0, 2.0},
-    {5.0, 3.0},
-    {5.0, 4.0},
-    // Exp mean: (4.75, 3.0)
+    "github.com/nathangreene3/kmeans"
+    "github.com/nathangreene3/kmeans/lpoint"
+)
+
+func main() {
+    labeledData, err := lpoint.ReadJSONFile("./data.json")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    mdl := kmeans.New(
+        len(lpoint.Labels(labeledData...)), // k
+        lpoint.Points(labeledData...),
+        kmeans.SetTrainRounds(3),              // Train three models keeping the highest scoring model
+        kmeans.SetInitMethod(kmeans.PlusPlus), // Use the k-means++ method
+    )
+
+    log.Println(mdl)
 }
-
-mdl := New(3, data, SetTrainRounds(3), SetInitMethod(PlusPlus)) // [(1.333..., 4.666...) (2, 1.333...) (4.75, 3)]
 ```

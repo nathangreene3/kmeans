@@ -349,18 +349,18 @@ func (mdl Model) SqDist(class int, datum Point) float64 {
 }
 
 // String returns a representation of a model formatted as
-// ((0.0, ..., 0.0), ..., (0.0, ..., 0.0))
+// {(0.0, ..., 0.0), ..., (0.0, ..., 0.0)}.
 func (mdl Model) String() string {
 	var sb strings.Builder
+	sb.WriteByte('{')
 	if len(mdl) != 0 {
-		sb.WriteString("(" + mdl[0].String())
+		sb.WriteString(mdl[0].String())
 		for i := 1; i < len(mdl); i++ {
 			sb.WriteString(", " + mdl[i].String())
 		}
-
-		sb.WriteByte(')')
 	}
 
+	sb.WriteByte('}')
 	return sb.String()
 }
 
